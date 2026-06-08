@@ -50,7 +50,7 @@ export default function MovementsPage() {
             className="pl-9"
           />
         </div>
-        <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v ?? 'all')}>
+        <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v ?? 'all')} items={[{ value: 'all', label: 'Todos los tipos' }, ...Object.entries(MOVEMENT_TYPES).map(([key, val]) => ({ value: key, label: val.label }))]}>
           <SelectTrigger className="sm:w-52">
             <SelectValue placeholder="Todos los tipos" />
           </SelectTrigger>

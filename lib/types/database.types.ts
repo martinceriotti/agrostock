@@ -276,6 +276,8 @@ export type Database = {
           wind_direction: string | null
           withholding_period: string | null
           order_status: 'draft' | 'sent' | 'executed'
+          latitude: number | null
+          longitude: number | null
         }
         Insert: {
           id?: string
@@ -301,6 +303,8 @@ export type Database = {
           wind_direction?: string | null
           withholding_period?: string | null
           order_status?: 'draft' | 'sent' | 'executed'
+          latitude?: number | null
+          longitude?: number | null
         }
         Update: {
           id?: string
@@ -326,6 +330,8 @@ export type Database = {
           wind_direction?: string | null
           withholding_period?: string | null
           order_status?: 'draft' | 'sent' | 'executed'
+          latitude?: number | null
+          longitude?: number | null
         }
       }
       field_application_items: {

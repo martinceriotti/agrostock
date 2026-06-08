@@ -87,6 +87,8 @@ export interface ApplicationRow {
   max_wind_speed: number | null
   wind_direction: string | null
   withholding_period: string | null
+  latitude: number | null
+  longitude: number | null
   profiles: { id: string; full_name: string } | null
   field_application_items: ApplicationItemRow[]
 }

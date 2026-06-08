@@ -63,6 +63,7 @@ export function ProductForm({ defaultValues, onSubmit, onCancel, isLoading }: Pr
           <Select
             value={form.watch('category_id')}
             onValueChange={(v) => form.setValue('category_id', v ?? '')}
+            items={categories.map(c => ({ value: c.id, label: c.name }))}
           >
             <SelectTrigger>
               <SelectValue placeholder="Seleccioná una categoría" />
@@ -85,6 +86,7 @@ export function ProductForm({ defaultValues, onSubmit, onCancel, isLoading }: Pr
           <Select
             value={form.watch('unit')}
             onValueChange={(v) => form.setValue('unit', v as ProductFormData['unit'])}
+            items={{ L: 'Litros (L)', kg: 'Kilogramos (kg)', unidad: 'Unidad', bolsa: 'Bolsa' }}
           >
             <SelectTrigger>
               <SelectValue />

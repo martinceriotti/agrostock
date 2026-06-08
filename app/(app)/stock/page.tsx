@@ -82,7 +82,7 @@ export default function StockPage() {
             className="pl-9"
           />
         </div>
-        <Select value={warehouseFilter} onValueChange={(v) => setWarehouseFilter(v ?? 'all')}>
+        <Select value={warehouseFilter} onValueChange={(v) => setWarehouseFilter(v ?? 'all')} items={[{ value: 'all', label: 'Todos los depósitos' }, ...warehouses.map(w => ({ value: w.id, label: w.name }))]}>
           <SelectTrigger className="sm:w-48">
             <SelectValue placeholder="Todos los depósitos" />
           </SelectTrigger>
@@ -93,7 +93,7 @@ export default function StockPage() {
             ))}
           </SelectContent>
         </Select>
-        <Select value={categoryFilter} onValueChange={(v) => setCategoryFilter(v ?? 'all')}>
+        <Select value={categoryFilter} onValueChange={(v) => setCategoryFilter(v ?? 'all')} items={[{ value: 'all', label: 'Todas las categorías' }, ...categories.map(c => ({ value: c.id, label: c.name }))]}>
           <SelectTrigger className="sm:w-48">
             <SelectValue placeholder="Todas las categorías" />
           </SelectTrigger>

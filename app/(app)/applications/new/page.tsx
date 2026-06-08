@@ -15,7 +15,7 @@ import { useCurrentStock } from '@/lib/hooks/use-stock'
 import { useCreateApplication } from '@/lib/hooks/use-applications'
 import { useUser } from '@/lib/hooks/use-user'
 import { PageHeader } from '@/components/ui/page-header'
-import { Plus, Trash2, Loader2, ArrowLeft, AlertTriangle } from 'lucide-react'
+import { Plus, Trash2, Loader2, ArrowLeft, AlertTriangle, LocateFixed } from 'lucide-react'
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
@@ -50,12 +50,25 @@ export default function NewApplicationPage() {
       max_wind_speed: null,
       wind_direction: '',
       withholding_period: '',
+      latitude: null,
+      longitude: null,
       items: [{ product_id: '', warehouse_id: '', dose_per_ha: null, quantity_used: 0 }],
     },
   })
 
   const { fields, append, remove } = useFieldArray({ control: form.control, name: 'items' })
   const areaHa = form.watch('area_ha')
+
+  function detectLocation() {
+    if (!navigator.geolocation) return
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        form.setValue('latitude', parseFloat(pos.coords.latitude.toFixed(6)))
+        form.setValue('longitude', parseFloat(pos.coords.longitude.toFixed(6)))
+      },
+      () => {},
+    )
+  }
 
   function getAvailableStock(productId: string, warehouseId: string) {
     if (!productId || !warehouseId) return null
@@ -211,6 +224,45 @@ export default function NewApplicationPage() {
           </CardContent>
         </Card>
 
+        {/* Coordenadas del lote */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base">Coordenadas del lote</CardTitle>
+              <Button type="button" variant="outline" size="sm" className="gap-2" onClick={detectLocation}>
+                <LocateFixed className="h-4 w-4" />
+                Detectar ubicación
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="latitude">Latitud</Label>
+              <Input
+                id="latitude"
+                type="number"
+                step="0.000001"
+                min="-90"
+                max="90"
+                placeholder="Ej: -34.603722"
+                {...form.register('latitude', { valueAsNumber: true, setValueAs: v => v === '' ? null : Number(v) })}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="longitude">Longitud</Label>
+              <Input
+                id="longitude"
+                type="number"
+                step="0.000001"
+                min="-180"
+                max="180"
+                placeholder="Ej: -58.381592"
+                {...form.register('longitude', { valueAsNumber: true, setValueAs: v => v === '' ? null : Number(v) })}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Insumos */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
@@ -247,6 +299,7 @@ export default function NewApplicationPage() {
                       <Select
                         value={form.watch(`items.${index}.product_id`)}
                         onValueChange={(v) => form.setValue(`items.${index}.product_id`, v ?? '')}
+                        items={products.map(p => ({ value: p.id, label: `${p.name}${p.brand ? ` — ${p.brand}` : ''} (${p.unit})` }))}
                       >
                         <SelectTrigger className="bg-white">
                           <SelectValue placeholder="Seleccionar producto" />
@@ -265,6 +318,7 @@ export default function NewApplicationPage() {
                       <Select
                         value={form.watch(`items.${index}.warehouse_id`)}
                         onValueChange={(v) => form.setValue(`items.${index}.warehouse_id`, v ?? '')}
+                        items={warehouses.map(w => ({ value: w.id, label: w.name }))}
                       >
                         <SelectTrigger className="bg-white">
                           <SelectValue placeholder="Depósito" />

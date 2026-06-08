@@ -86,6 +86,8 @@ export const fieldApplicationSchema = z.object({
   max_wind_speed: z.number().min(0).optional().nullable(),
   wind_direction: z.string().optional(),
   withholding_period: z.string().optional(),
+  latitude: z.number().min(-90).max(90).optional().nullable(),
+  longitude: z.number().min(-180).max(180).optional().nullable(),
   items: z.array(fieldApplicationItemSchema).min(1, 'Agregá al menos un producto'),
 })
 

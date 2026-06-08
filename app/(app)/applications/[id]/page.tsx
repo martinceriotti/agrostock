@@ -117,6 +117,9 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
             {app.crop_variety && <Detail label="Variedad" value={app.crop_variety} />}
             {app.cycle && <Detail label="Ciclo" value={app.cycle} />}
             {app.area_ha && <Detail label="Superficie" value={`${app.area_ha} ha`} />}
+            {(app.latitude != null && app.longitude != null) && (
+              <Detail label="Coordenadas" value={`${app.latitude}, ${app.longitude}`} />
+            )}
           </CardContent>
         </Card>
 

@@ -96,7 +96,7 @@ function UsersTab() {
             </div>
             <div className="space-y-1.5">
               <Label>Rol</Label>
-              <Select value={inviteRole} onValueChange={(v) => setInviteRole(v as typeof inviteRole)}>
+              <Select value={inviteRole} onValueChange={(v) => setInviteRole(v as typeof inviteRole)} items={{ engineer: 'Ingeniero (solo consulta)', manager: 'Manager (compras + aplicaciones)', admin: 'Admin (acceso total)' }}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -135,6 +135,7 @@ function UsersTab() {
               <Select
                 value={row.role}
                 onValueChange={(v) => handleRoleChange(row.id, v as 'admin' | 'manager' | 'engineer')}
+                items={{ engineer: 'Ingeniero', manager: 'Manager', admin: 'Admin' }}
               >
                 <SelectTrigger className="w-36 h-8">
                   <SelectValue />
@@ -213,7 +214,7 @@ function CategoriesTab() {
             </div>
             <div className="space-y-1.5">
               <Label>Tipo</Label>
-              <Select value={form.watch('type')} onValueChange={(v) => form.setValue('type', v as 'agroquimico' | 'semilla')}>
+              <Select value={form.watch('type')} onValueChange={(v) => form.setValue('type', v as 'agroquimico' | 'semilla')} items={{ agroquimico: 'Agroquímico', semilla: 'Semilla' }}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="agroquimico">Agroquímico</SelectItem>

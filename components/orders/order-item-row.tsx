@@ -37,6 +37,7 @@ export function OrderItemRow({ index, form, products, warehouses, onRemove }: Or
         <Select
           value={form.watch(`items.${index}.product_id`)}
           onValueChange={(v) => form.setValue(`items.${index}.product_id`, v ?? '')}
+          items={products.map(p => ({ value: p.id, label: `${p.name}${p.brand ? ` — ${p.brand}` : ''} (${p.unit})` }))}
         >
           <SelectTrigger className="bg-white">
             <SelectValue placeholder="Producto" />
@@ -59,6 +60,7 @@ export function OrderItemRow({ index, form, products, warehouses, onRemove }: Or
         <Select
           value={form.watch(`items.${index}.warehouse_id`)}
           onValueChange={(v) => form.setValue(`items.${index}.warehouse_id`, v ?? '')}
+          items={warehouses.map(w => ({ value: w.id, label: w.name }))}
         >
           <SelectTrigger className="bg-white">
             <SelectValue placeholder="Depósito" />

@@ -71,6 +71,7 @@ export default function NewOrderPage() {
               <Select
                 value={form.watch('supplier_id') ?? ''}
                 onValueChange={(v) => form.setValue('supplier_id', v || null)}
+                items={[{ value: '', label: 'Sin proveedor' }, ...suppliers.map(s => ({ value: s.id, label: s.name }))]}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Sin proveedor" />
@@ -89,6 +90,7 @@ export default function NewOrderPage() {
               <Select
                 value={currency}
                 onValueChange={(v) => form.setValue('currency', v as 'ARS' | 'USD')}
+                items={{ ARS: 'Pesos (ARS)', USD: 'Dólares (USD)' }}
               >
                 <SelectTrigger>
                   <SelectValue />
