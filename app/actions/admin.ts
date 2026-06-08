@@ -91,7 +91,7 @@ export async function inviteUser(data: {
         : 'http://localhost:3000')
 
     const { data: invited, error } = await admin.auth.admin.inviteUserByEmail(data.email, {
-      data: { full_name: data.full_name },
+      data: { full_name: data.full_name, role: data.role, organization_id: orgId },
       redirectTo: `${siteUrl}/auth/callback`,
     })
     if (error) return { success: false, error: error.message }
