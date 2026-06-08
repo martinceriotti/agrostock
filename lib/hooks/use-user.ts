@@ -15,11 +15,11 @@ export function useUser() {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('*')
+        .select('*, organizations:organization_id (id, name)')
         .eq('id', user.id)
         .single()
 
-      return profile as Profile | null
+      return profile as (Profile & { organizations: { id: string; name: string } | null }) | null
     },
   })
 }
