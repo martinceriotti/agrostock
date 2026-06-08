@@ -61,7 +61,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       {user && (
         <div className="border-t border-green-800 px-4 py-3">
           <p className="text-xs text-green-300 font-medium truncate">
-            {user.full_name ?? user.email}
+            {user.full_name ?? 'Usuario'}
           </p>
           <p className="text-xs text-green-600 capitalize mt-0.5">{user.role}</p>
         </div>
