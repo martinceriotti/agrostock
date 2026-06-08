@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import type { FieldApplicationFormData } from '@/lib/validations'
 import type { ApplicationRow } from '@/lib/types/app.types'
 import { toast } from 'sonner'
+import { logActivity } from '@/lib/utils/log-activity'
 
 export function useApplications() {
   const supabase = createClient()
@@ -97,9 +98,17 @@ export function useCreateApplication() {
 
       return app
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       qc.invalidateQueries({ queryKey: ['applications'] })
       toast.success('Orden de aplicación creada como borrador.')
+      logActivity({
+        action: 'create_application',
+        entityType: 'application',
+        entityId: (data as { id: string }).id,
+        entityName: variables.values.field_name,
+        userId: variables.userId,
+        orgId: variables.orgId,
+      })
     },
     onError: (error) => {
       console.error(error)
@@ -160,12 +169,19 @@ export function useExecuteApplication() {
 
       if (updateError) throw updateError
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       qc.invalidateQueries({ queryKey: ['applications'] })
       qc.invalidateQueries({ queryKey: ['current-stock'] })
       qc.invalidateQueries({ queryKey: ['stock-movements'] })
       qc.invalidateQueries({ queryKey: ['dashboard'] })
       toast.success('Aplicación ejecutada. Stock descontado.')
+      logActivity({
+        action: 'execute_application',
+        entityType: 'application',
+        entityId: variables.applicationId,
+        userId: variables.userId,
+        orgId: variables.orgId,
+      })
     },
     onError: (error) => {
       console.error(error)

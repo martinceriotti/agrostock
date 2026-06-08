@@ -7,6 +7,9 @@ import {
   Settings,
   Warehouse,
   Package,
+  Users,
+  ActivitySquare,
+  BookOpen,
 } from 'lucide-react'
 
 export const navItems = [
@@ -57,5 +60,23 @@ export const navItems = [
     href: '/settings',
     icon: Settings,
     roles: ['admin'],
+  },
+  {
+    label: 'Usuarios',
+    href: '/admin/users',
+    icon: Users,
+    roles: ['admin'],
+  },
+  {
+    label: 'Actividad',
+    href: '/admin/activity',
+    icon: ActivitySquare,
+    roles: ['admin'],
+  },
+  {
+    label: 'Manual',
+    href: '/manual',
+    icon: BookOpen,
+    roles: ['admin', 'manager', 'engineer'],
   },
 ]

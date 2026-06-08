@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import type { PurchaseOrderFormData } from '@/lib/validations'
 import type { OrderRow } from '@/lib/types/app.types'
 import { toast } from 'sonner'
+import { logActivity } from '@/lib/utils/log-activity'
 
 export function useOrders(status?: string) {
   const supabase = createClient()
@@ -86,9 +87,17 @@ export function useCreateOrder() {
 
       return order
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       qc.invalidateQueries({ queryKey: ['orders'] })
       toast.success('Orden de compra creada')
+      logActivity({
+        action: 'create_order',
+        entityType: 'order',
+        entityId: (data as { id: string }).id,
+        entityName: (data as { order_number: string }).order_number,
+        userId: variables.userId,
+        orgId: variables.orgId,
+      })
     },
     onError: () => toast.error('Error al crear la orden'),
   })
@@ -148,11 +157,18 @@ export function useReceiveOrder() {
         await supabase.from('purchase_orders').update({ status: newStatus }).eq('id', orderId)
       }
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       qc.invalidateQueries({ queryKey: ['orders'] })
       qc.invalidateQueries({ queryKey: ['current-stock'] })
       qc.invalidateQueries({ queryKey: ['stock-movements'] })
       toast.success('Recepción registrada. Stock actualizado.')
+      logActivity({
+        action: 'receive_order',
+        entityType: 'order',
+        entityId: variables.orderId,
+        userId: variables.userId,
+        orgId: variables.orgId,
+      })
     },
     onError: () => toast.error('Error al registrar la recepción'),
   })
