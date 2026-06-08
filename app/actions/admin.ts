@@ -85,8 +85,14 @@ export async function inviteUser(data: {
     const { orgId } = await requireAdmin()
     const admin = getAdminClient()
 
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL
+      ?? (process.env.VERCEL_PROJECT_PRODUCTION_URL
+        ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+        : 'http://localhost:3000')
+
     const { data: invited, error } = await admin.auth.admin.inviteUserByEmail(data.email, {
       data: { full_name: data.full_name },
+      redirectTo: `${siteUrl}/auth/callback`,
     })
     if (error) return { success: false, error: error.message }
 
