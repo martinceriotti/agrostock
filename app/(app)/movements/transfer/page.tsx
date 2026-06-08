@@ -20,7 +20,7 @@ const transferSchema = z.object({
   product_id:        z.string().min(1, 'Seleccioná un producto'),
   from_warehouse_id: z.string().min(1, 'Seleccioná el depósito origen'),
   to_warehouse_id:   z.string().min(1, 'Seleccioná el depósito destino'),
-  quantity:          z.coerce.number({ error: 'Ingresá una cantidad' }).positive('Debe ser mayor a 0'),
+  quantity:          z.number().positive('Ingresá una cantidad mayor a 0'),
   notes:             z.string().optional(),
 })
 type TransferData = z.infer<typeof transferSchema>
