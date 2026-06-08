@@ -180,6 +180,123 @@ export default function ManualPage() {
           </p>
         </Section>
 
+        <Section title="12. Módulo Silos Bolsa (IoT)">
+          <div className="mb-3 bg-amber-50 border border-amber-200 rounded-md px-4 py-2.5 text-sm text-amber-800">
+            <strong>Estado:</strong> Infraestructura lista. Interfaz de gestión completa en desarrollo.
+          </div>
+          <p className="text-sm text-gray-700 mb-4">
+            Monitoreo en tiempo real de temperatura, humedad y CO₂ dentro de cada silo bolsa mediante sensores IoT
+            instalados a lo largo de la bolsa.
+          </p>
+
+          <h4 className="font-semibold text-gray-800 mb-2">Variables monitoreadas</h4>
+          <table className="w-full text-sm border-collapse mb-4">
+            <thead>
+              <tr className="bg-gray-50">
+                <th className="text-left border border-gray-200 px-3 py-2 font-semibold">Variable</th>
+                <th className="text-left border border-gray-200 px-3 py-2 font-semibold">Unidad</th>
+                <th className="text-left border border-gray-200 px-3 py-2 font-semibold">Umbral de alerta</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                ['Temperatura', '°C', '> 35 °C'],
+                ['Humedad relativa', '%', '> 14 %'],
+                ['CO₂', 'ppm', '> 5000 ppm'],
+                ['Batería del sensor', '%', '< 20 %'],
+              ].map(([v, u, t]) => (
+                <tr key={v} className="even:bg-gray-50">
+                  <td className="border border-gray-200 px-3 py-2">{v}</td>
+                  <td className="border border-gray-200 px-3 py-2">{u}</td>
+                  <td className="border border-gray-200 px-3 py-2 text-red-700 font-mono text-xs">{t}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          <h4 className="font-semibold text-gray-800 mb-2">Integración IoT — Contrato de la API</h4>
+          <p className="text-sm text-gray-700 mb-2">
+            El gateway IoT envía lecturas por HTTP POST:
+          </p>
+          <pre className="bg-gray-50 border border-gray-200 rounded-md px-4 py-3 text-xs font-mono text-gray-700 overflow-x-auto mb-3 whitespace-pre-wrap">{`POST https://<dominio>/api/iot/silo-readings
+Authorization: Bearer <api_key_del_silo>
+Content-Type: application/json
+
+{
+  "sensor_id": "uuid-del-sensor",    // opcional
+  "recorded_at": "2025-06-08T14:00:00Z",
+  "temperature_c": 28.4,
+  "humidity_pct": 13.2,
+  "co2_ppm": 1200,
+  "battery_pct": 85
+}`}</pre>
+          <p className="text-sm text-gray-700 mb-3">
+            También acepta un <strong>array</strong> de lecturas en un solo request (envío en lote). Todos los campos
+            son opcionales excepto la autenticación. Si <code className="text-xs bg-gray-100 px-1 rounded">recorded_at</code> no
+            se envía, se usa la hora del servidor.
+          </p>
+          <Note>
+            Cada silo tiene una <strong>API key única</strong>. El gateway debe configurarse con ella.
+            Si se compromete, el administrador puede regenerarla desde la interfaz.
+          </Note>
+        </Section>
+
+        <Section title="11. Alta de un nuevo tenant (administrador del sistema)">
+          <p className="text-sm text-gray-700 mb-4">
+            Esta sección está dirigida a quien administra la plataforma y necesita habilitar a una nueva empresa u
+            organización para usar el sistema.
+          </p>
+
+          {/* Diagrama de flujo */}
+          <div className="bg-gray-50 border border-gray-200 rounded-lg px-5 py-4 mb-5 font-mono text-xs text-gray-600 leading-relaxed">
+            <p>1. Crear usuario admin en el panel de Supabase</p>
+            <p className="pl-6 text-gray-400">↓</p>
+            <p>2. El usuario hace login → la app lo redirige a /onboarding</p>
+            <p className="pl-6 text-gray-400">↓</p>
+            <p>3. Completa datos de la organización → queda como Admin</p>
+            <p className="pl-6 text-gray-400">↓</p>
+            <p>4. El Admin invita al equipo desde Usuarios</p>
+            <p className="pl-6 text-gray-400">↓</p>
+            <p>5. Cada invitado recibe email → entra directo al dashboard</p>
+          </div>
+
+          <h4 className="font-semibold text-gray-800 mb-1">Paso 1 — Crear el usuario admin inicial</h4>
+          <p className="text-sm text-gray-700 mb-3">
+            La app no tiene registro público. El primer usuario de cada tenant debe crearse en el panel de Supabase:
+            <strong> Authentication → Users → Add user</strong>. Ingresar email y contraseña del admin de la nueva empresa.
+            El sistema crea el perfil automáticamente (sin organización asignada todavía).
+          </p>
+
+          <h4 className="font-semibold text-gray-800 mb-1">Paso 2 — Onboarding: configurar la organización</h4>
+          <p className="text-sm text-gray-700 mb-2">
+            La primera vez que el admin hace login, la app detecta que no tiene organización y lo redirige a
+            la pantalla <strong>"Configurá tu organización"</strong>. Al confirmar, el sistema crea automáticamente:
+          </p>
+          <ul className="list-disc list-inside text-sm text-gray-700 mb-3 space-y-1">
+            <li>La organización en la base de datos</li>
+            <li>El usuario queda como <strong>Admin</strong> de esa org</li>
+            <li>Las categorías de productos de base (Herbicida, Fungicida, Insecticida, etc.)</li>
+            <li>Un depósito inicial llamado "Depósito Principal"</li>
+          </ul>
+
+          <h4 className="font-semibold text-gray-800 mb-1">Paso 3 — Invitar al equipo</h4>
+          <p className="text-sm text-gray-700 mb-3">
+            El Admin invita usuarios desde el menú <strong>Usuarios</strong>. Cada invitado recibe un email con un link
+            que lo asigna automáticamente a la misma organización y lo lleva directo al dashboard (sin pasar por el onboarding).
+          </p>
+          <Note>
+            El link de invitación expira en <strong>24 horas</strong>. Si el usuario no lo usa a tiempo, el Admin debe
+            re-enviarlo desde el panel de Supabase (Authentication → Users → Send magic link).
+          </Note>
+
+          <h4 className="font-semibold text-gray-800 mt-5 mb-1">Aislamiento entre tenants</h4>
+          <p className="text-sm text-gray-700">
+            Cada organización es completamente independiente. Los usuarios de una empresa no pueden ver ni acceder a los
+            datos de otra. Esto está garantizado por las políticas de seguridad (RLS) de la base de datos: cada consulta
+            filtra automáticamente por la organización del usuario autenticado.
+          </p>
+        </Section>
+
         <div className="border-t border-gray-200 mt-10 pt-4 text-xs text-gray-400 text-center">
           Para soporte técnico o reportar un problema, contactar al administrador del sistema.
         </div>

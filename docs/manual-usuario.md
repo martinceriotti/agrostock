@@ -12,6 +12,8 @@
 8. [Stock y movimientos](#8-stock-y-movimientos)
 9. [Administración de usuarios](#9-administración-de-usuarios)
 10. [Control de actividad](#10-control-de-actividad)
+11. [Alta de un nuevo tenant (administrador del sistema)](#11-alta-de-un-nuevo-tenant-administrador-del-sistema)
+12. [Módulo Silos Bolsa (IoT)](#12-módulo-silos-bolsa-iot)
 
 ---
 
@@ -199,6 +201,144 @@ Se puede filtrar por:
 - **Búsqueda libre** — por nombre de usuario o nombre de entidad.
 
 La lista se actualiza automáticamente cada 30 segundos.
+
+---
+
+## 11. Alta de un nuevo tenant (administrador del sistema)
+
+Esta sección está dirigida a quien administra la plataforma AgroStock y necesita habilitar a una **nueva empresa u organización** para usar el sistema.
+
+### Resumen del flujo
+
+```
+1. Crear el usuario admin inicial en el panel de Supabase
+       ↓
+2. El usuario hace login → la app detecta que no tiene org → redirige a /onboarding
+       ↓
+3. Completa los datos de la organización → org creada, usuario queda como Admin
+       ↓
+4. El Admin invita al resto del equipo desde Usuarios → cada invitado recibe un email
+       ↓
+5. El invitado hace clic en el link → entra directo al dashboard con su org asignada
+```
+
+---
+
+### Paso 1 — Crear el usuario admin inicial
+
+La app no tiene registro público. El primer usuario de cada tenant debe crearse manualmente en el panel de Supabase:
+
+1. Ingresar al panel de Supabase del proyecto.
+2. Ir a **Authentication → Users**.
+3. Hacer clic en **Add user** (o "Invite user").
+4. Ingresar el email y contraseña del administrador de la nueva empresa.
+5. Guardar.
+
+El sistema crea automáticamente un perfil para ese usuario (sin organización asignada todavía).
+
+---
+
+### Paso 2 — Onboarding: configurar la organización
+
+La primera vez que el usuario admin hace login, la app detecta que no tiene organización y lo redirige a la pantalla de **Configurá tu organización**.
+
+El usuario debe completar:
+- **Nombre de la empresa** (obligatorio)
+- CUIT, teléfono, email de contacto, dirección (opcionales)
+
+Al confirmar, el sistema de forma automática:
+- Crea la organización en la base de datos
+- Asigna al usuario como **Admin** de esa org
+- Crea las categorías de productos de base (Herbicida, Fungicida, Insecticida, etc.)
+- Crea un depósito inicial llamado "Depósito Principal"
+
+El usuario queda dentro de la app, listo para operar.
+
+---
+
+### Paso 3 — Invitar al equipo
+
+El Admin puede invitar al resto de los usuarios desde **Usuarios** (menú lateral). Ver sección [9. Administración de usuarios](#9-administración-de-usuarios).
+
+Los usuarios invitados reciben un email con un link que:
+- Establece su contraseña
+- Los asigna automáticamente a la misma organización que el Admin
+- Los lleva directo al dashboard (sin pasar por el onboarding)
+
+> **Importante:** El link de invitación expira en **24 horas**. Si el usuario no lo usa a tiempo, el Admin debe re-enviarlo desde el panel de Supabase (Authentication → Users → Send magic link / Reset password).
+
+---
+
+### Aislamiento entre tenants
+
+Cada organización es completamente independiente. Los usuarios de una empresa **no pueden ver ni acceder** a los datos de otra. Esto está garantizado por las políticas de seguridad (RLS) de la base de datos: cada consulta filtra automáticamente por `organization_id` del usuario autenticado.
+
+---
+
+## 12. Módulo Silos Bolsa (IoT)
+
+> **Estado:** Infraestructura lista. Interfaz de gestión completa en desarrollo.
+
+Este módulo permite monitorear en tiempo real las condiciones internas de cada silo bolsa mediante sensores IoT instalados a lo largo de la bolsa.
+
+### Variables monitoreadas
+
+| Variable | Unidad | Umbral de alerta por defecto |
+|----------|--------|------------------------------|
+| Temperatura | °C | > 35 °C |
+| Humedad relativa | % | > 14 % |
+| CO₂ | ppm | > 5000 ppm |
+| Batería del sensor | % | < 20 % |
+
+Los umbrales son configurables por silo desde la interfaz de administración.
+
+### Integración IoT — Contrato de la API
+
+El gateway o dispositivo IoT en campo envía datos mediante HTTP POST a:
+
+```
+POST https://<dominio>/api/iot/silo-readings
+Authorization: Bearer <api_key_del_silo>
+Content-Type: application/json
+```
+
+**Cuerpo (lectura única):**
+```json
+{
+  "sensor_id": "uuid-del-sensor",
+  "recorded_at": "2025-06-08T14:00:00Z",
+  "temperature_c": 28.4,
+  "humidity_pct": 13.2,
+  "co2_ppm": 1200,
+  "battery_pct": 85
+}
+```
+
+**Cuerpo (lote de lecturas):**
+```json
+[
+  { "sensor_id": "...", "recorded_at": "...", "temperature_c": 28.4, "humidity_pct": 13.2 },
+  { "sensor_id": "...", "recorded_at": "...", "temperature_c": 31.1, "humidity_pct": 14.8 }
+]
+```
+
+Todos los campos excepto `sensor_id` son opcionales. Si `recorded_at` no se envía, se usa la hora de recepción del servidor.
+
+**Respuesta exitosa (200):**
+```json
+{ "inserted": 2, "alerts": ["high_humidity: 14.8%"] }
+```
+
+### API key por silo
+
+Cada silo tiene una API key única generada automáticamente al crearlo. El gateway debe configurarse con esa clave. Si se compromete, el administrador puede regenerarla desde la interfaz.
+
+### Estructura de datos
+
+- **Silos:** tabla maestra (nombre, campo, cultivo, capacidad, fechas, coordenadas GPS, estado).
+- **Sensores:** puntos de medición por silo (label, posición en metros desde el inicio de la bolsa).
+- **Lecturas:** serie temporal de mediciones por sensor.
+- **Alertas:** historial de alertas disparadas (activas y resueltas).
 
 ---
 

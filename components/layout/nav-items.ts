@@ -11,6 +11,7 @@ import {
   ActivitySquare,
   BookOpen,
   Truck,
+  Database,
 } from 'lucide-react'
 
 export const navItems = [
@@ -49,6 +50,12 @@ export const navItems = [
     href: '/movements/transfer',
     icon: Truck,
     roles: ['admin', 'manager'],
+  },
+  {
+    label: 'Silos Bolsa',
+    href: '/silos',
+    icon: Database,
+    roles: ['admin', 'manager', 'engineer'],
   },
   {
     label: 'Productos',
