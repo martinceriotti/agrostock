@@ -123,20 +123,34 @@ export default function ManualPage() {
           </Note>
         </Section>
 
-        <Section title="7. Stock y movimientos">
+        <Section title="7. Transferencia entre depósitos">
+          <p className="text-xs text-gray-500 mb-3">Quién lo hace: Manager o Admin — menú: Transferencia</p>
+          <p className="text-sm text-gray-700 mb-3">
+            Permite mover mercadería entre depósitos sin que salga al campo. El stock total no cambia; solo cambia dónde figura.
+          </p>
+          <Steps steps={[
+            'En el menú lateral, ir a Transferencia.',
+            'Seleccionar el producto a transferir.',
+            'Seleccionar el depósito origen — se muestra el stock disponible en cada depósito.',
+            'Seleccionar el depósito destino — no puede ser el mismo que el origen.',
+            'Ingresar la cantidad (el sistema valida que no supere el stock disponible).',
+            'Agregar una nota opcional y hacer clic en Confirmar transferencia.',
+          ]} />
+          <Note>Los movimientos quedan en el historial con tipo Transferencia.</Note>
+        </Section>
+
+        <Section title="8. Stock y movimientos">
           <h4 className="font-semibold text-gray-800 mt-3 mb-1">Vista de Stock</h4>
           <p className="text-sm text-gray-700">
-            Muestra el stock actual por producto y depósito. Los productos con stock por debajo del mínimo
-            configurado se marcan con una alerta visual.
+            Muestra el stock actual por producto y depósito. Los productos por debajo del mínimo se marcan con alerta visual.
           </p>
           <h4 className="font-semibold text-gray-800 mt-4 mb-1">Movimientos</h4>
           <p className="text-sm text-gray-700">
-            Registro completo de todas las entradas y salidas. Cada fila muestra tipo, producto, depósito, cantidad
-            (positiva = entrada, negativa = salida), usuario y fecha.
+            Registro completo de entradas, salidas y transferencias. Muestra tipo, producto, depósito, cantidad, usuario y fecha.
           </p>
         </Section>
 
-        <Section title="8. Administración de usuarios">
+        <Section title="9. Administración de usuarios">
           <p className="text-xs text-gray-500 mb-3">Solo para Admin — menú: Usuarios</p>
           <h4 className="font-semibold text-gray-800 mb-1">Invitar un usuario nuevo</h4>
           <Steps steps={[
@@ -157,7 +171,7 @@ export default function ManualPage() {
           <Note>No es posible eliminarse a uno mismo ni cambiar su propio rol.</Note>
         </Section>
 
-        <Section title="9. Control de actividad">
+        <Section title="10. Control de actividad">
           <p className="text-xs text-gray-500 mb-3">Solo para Admin — menú: Actividad</p>
           <p className="text-sm text-gray-700">
             Muestra un historial de todas las acciones realizadas por los usuarios: creación de órdenes, ejecuciones

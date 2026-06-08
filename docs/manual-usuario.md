@@ -8,9 +8,10 @@
 4. [Flujo: Recepción de mercadería](#4-flujo-recepción-de-mercadería)
 5. [Flujo: Orden de aplicación en campo](#5-flujo-orden-de-aplicación-en-campo)
 6. [Flujo: Ejecución de una aplicación](#6-flujo-ejecución-de-una-aplicación)
-7. [Stock y movimientos](#7-stock-y-movimientos)
-8. [Administración de usuarios](#8-administración-de-usuarios)
-9. [Control de actividad](#9-control-de-actividad)
+7. [Flujo: Transferencia entre depósitos](#7-flujo-transferencia-entre-depósitos)
+8. [Stock y movimientos](#8-stock-y-movimientos)
+9. [Administración de usuarios](#9-administración-de-usuarios)
+10. [Control de actividad](#10-control-de-actividad)
 
 ---
 
@@ -30,6 +31,7 @@ Si olvidó su contraseña, utilice el link "¿Olvidaste tu contraseña?" en la p
 | Ver stock, movimientos, productos | ✓ | ✓ | ✓ |
 | Crear órdenes de aplicación | ✓ | ✓ | ✓ |
 | Ejecutar aplicaciones (descuenta stock) | — | ✓ | ✓ |
+| Transferir stock entre depósitos | — | ✓ | ✓ |
 | Crear y recibir órdenes de compra | — | ✓ | ✓ |
 | Administrar productos y depósitos | — | ✓ | ✓ |
 | Configuración general | — | — | ✓ |
@@ -116,7 +118,25 @@ Los cambios se reflejan de inmediato en la vista de Stock y en el Dashboard.
 
 ---
 
-## 7. Stock y movimientos
+## 7. Flujo: Transferencia entre depósitos
+
+**Quién lo hace:** Manager o Admin
+
+Permite mover mercadería de un depósito a otro sin salida al campo. El stock total no cambia; solo cambia el depósito donde figura.
+
+1. En el menú lateral, ir a **Transferencia**.
+2. Seleccionar el **producto** a transferir.
+3. Seleccionar el **depósito origen** — se muestra el stock disponible de ese producto en cada depósito.
+4. Seleccionar el **depósito destino** — no puede ser el mismo que el origen.
+5. Ingresar la **cantidad** a transferir. El sistema valida que no supere el stock disponible en origen.
+6. Agregar una nota opcional (ej.: "Redistribución fin de temporada").
+7. Hacer clic en **Confirmar transferencia**.
+
+Los movimientos quedan registrados en el historial con tipo **Transferencia** y pueden verse en la sección Movimientos.
+
+---
+
+## 8. Stock y movimientos
 
 ### Vista de Stock
 
@@ -135,7 +155,7 @@ Registro completo de todas las entradas y salidas. Cada fila muestra:
 
 ---
 
-## 8. Administración de usuarios
+## 9. Administración de usuarios
 
 **Solo para Admin**
 
@@ -166,7 +186,7 @@ El usuario pierde el acceso de inmediato. Sus registros históricos (órdenes, m
 
 ---
 
-## 9. Control de actividad
+## 10. Control de actividad
 
 **Solo para Admin**
 
