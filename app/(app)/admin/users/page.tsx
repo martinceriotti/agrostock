@@ -13,9 +13,9 @@ import { Card, CardContent } from '@/components/ui/card'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { getOrgUsers, inviteUser, updateUserRole, updateUserName, deleteUser } from '@/app/actions/admin'
+import { getOrgUsers, inviteUser, updateUserRole, updateUserName, deleteUser, sendPasswordReset } from '@/app/actions/admin'
 import { toast } from 'sonner'
-import { Plus, Pencil, Trash2, Loader2, UserCheck, Mail } from 'lucide-react'
+import { Plus, Pencil, Trash2, Loader2, UserCheck, Mail, KeyRound } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 
@@ -43,10 +43,13 @@ export default function AdminUsersPage() {
   const [editName, setEditName] = useState('')
   const [editRole, setEditRole] = useState<'admin' | 'manager' | 'engineer'>('engineer')
 
-  const { data: users = [], isLoading, error } = useQuery({
+  const { data: result, isLoading } = useQuery({
     queryKey: ['admin-users'],
     queryFn: () => getOrgUsers(),
   })
+
+  const users = result?.success ? result.data ?? [] : []
+  const queryError = result && !result.success ? result.error : null
 
   const form = useForm<InviteData>({
     resolver: zodResolver(inviteSchema),
@@ -61,43 +64,47 @@ export default function AdminUsersPage() {
 
   function handleInvite(data: InviteData) {
     startTransition(async () => {
-      try {
-        await inviteUser(data)
-        toast.success(`Invitación enviada a ${data.email}`)
-        form.reset()
-        setShowInvite(false)
-        qc.invalidateQueries({ queryKey: ['admin-users'] })
-      } catch (e) {
-        toast.error((e as Error).message)
+      const result = await inviteUser(data)
+      if (!result.success) {
+        toast.error(result.error)
+        return
       }
+      toast.success(`Invitación enviada a ${data.email}`)
+      form.reset()
+      setShowInvite(false)
+      qc.invalidateQueries({ queryKey: ['admin-users'] })
     })
   }
 
   function handleSaveEdit() {
     if (!editUser) return
     startTransition(async () => {
-      try {
-        await updateUserName(editUser.id, editName)
-        await updateUserRole(editUser.id, editRole)
-        toast.success('Usuario actualizado')
-        setEditUser(null)
-        qc.invalidateQueries({ queryKey: ['admin-users'] })
-      } catch (e) {
-        toast.error((e as Error).message)
-      }
+      const r1 = await updateUserName(editUser.id, editName)
+      if (!r1.success) { toast.error(r1.error); return }
+      const r2 = await updateUserRole(editUser.id, editRole)
+      if (!r2.success) { toast.error(r2.error); return }
+      toast.success('Usuario actualizado')
+      setEditUser(null)
+      qc.invalidateQueries({ queryKey: ['admin-users'] })
     })
   }
 
   function handleDelete(user: OrgUser) {
     if (!confirm(`¿Eliminar al usuario ${user.full_name}? Esta acción no se puede deshacer.`)) return
     startTransition(async () => {
-      try {
-        await deleteUser(user.id)
-        toast.success(`Usuario ${user.full_name} eliminado`)
-        qc.invalidateQueries({ queryKey: ['admin-users'] })
-      } catch (e) {
-        toast.error((e as Error).message)
-      }
+      const result = await deleteUser(user.id)
+      if (!result.success) { toast.error(result.error); return }
+      toast.success(`Usuario ${user.full_name} eliminado`)
+      qc.invalidateQueries({ queryKey: ['admin-users'] })
+    })
+  }
+
+  function handlePasswordReset(user: OrgUser) {
+    if (!confirm(`¿Enviar email de restablecimiento de contraseña a ${user.email}?`)) return
+    startTransition(async () => {
+      const result = await sendPasswordReset(user.email)
+      if (!result.success) { toast.error(result.error); return }
+      toast.success(`Email de restablecimiento enviado a ${user.email}`)
     })
   }
 
@@ -114,10 +121,10 @@ export default function AdminUsersPage() {
         }
       />
 
-      {error && (
+      {queryError && (
         <Card className="mb-4 border-amber-200 bg-amber-50">
           <CardContent className="pt-4 text-sm text-amber-800">
-            <strong>Atención:</strong> {(error as Error).message}
+            <strong>Atención:</strong> {queryError}
           </CardContent>
         </Card>
       )}
@@ -156,6 +163,16 @@ export default function AdminUsersPage() {
                     {format(new Date(user.created_at), 'dd MMM yyyy', { locale: es })}
                   </span>
                   <div className="flex gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-gray-500 hover:text-blue-600 hover:bg-blue-50"
+                      onClick={() => handlePasswordReset(user)}
+                      disabled={isPending}
+                      title="Restablecer contraseña"
+                    >
+                      <KeyRound className="h-3.5 w-3.5" />
+                    </Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(user)}>
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
