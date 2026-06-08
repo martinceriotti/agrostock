@@ -123,8 +123,8 @@ export default function DashboardPage() {
                   <XAxis dataKey="month" tick={{ fontSize: 11 }} />
                   <YAxis tick={{ fontSize: 11 }} />
                   <Tooltip
-                    formatter={(value: number, name: string) => [
-                      `${value.toLocaleString('es-AR')} ${consumptionTab === 'litros' ? 'L' : 'kg'}`,
+                    formatter={(value, name) => [
+                      `${Number(value ?? 0).toLocaleString('es-AR')} ${consumptionTab === 'litros' ? 'L' : 'kg'}`,
                       name,
                     ]}
                   />
@@ -150,7 +150,7 @@ export default function DashboardPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis dataKey="month" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `$${(v/1000).toFixed(0)}k`} />
-                <Tooltip formatter={(v: number) => [`U$D ${v.toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`, 'Gasto']} />
+                <Tooltip formatter={(v) => [`U$D ${Number(v ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`, 'Gasto']} />
                 <Bar dataKey="USD" fill="#7c3aed" radius={[4, 4, 0, 0]} name="USD" />
               </BarChart>
             </ResponsiveContainer>
