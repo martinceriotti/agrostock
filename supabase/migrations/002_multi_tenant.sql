@@ -1,12 +1,13 @@
 -- ============================================================
 -- Migration 002: Multi-tenant + Orden de aplicación
 -- Correr en: Supabase Dashboard > SQL Editor
+-- Idempotente: puede correrse aunque haya fallado a mitad.
 -- ============================================================
 
 -- ============================================================
 -- 1. TABLA ORGANIZATIONS
 -- ============================================================
-CREATE TABLE public.organizations (
+CREATE TABLE IF NOT EXISTS public.organizations (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name TEXT NOT NULL,
   cuit TEXT,
@@ -18,33 +19,18 @@ CREATE TABLE public.organizations (
 
 ALTER TABLE public.organizations ENABLE ROW LEVEL SECURITY;
 
--- Miembros ven su propia org
-CREATE POLICY "Miembros ven su org" ON public.organizations
-  FOR SELECT USING (
-    id IN (SELECT organization_id FROM public.profiles WHERE id = auth.uid())
-  );
-
--- Admin actualiza su org
-CREATE POLICY "Admin actualiza su org" ON public.organizations
-  FOR UPDATE USING (
-    id IN (SELECT organization_id FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
-  );
-
--- Cualquier usuario autenticado puede crear una org (onboarding)
-CREATE POLICY "Usuarios crean org" ON public.organizations
-  FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
-
 -- ============================================================
 -- 2. AGREGAR organization_id A TODAS LAS TABLAS
+-- (ANTES de crear políticas que referencian estas columnas)
 -- ============================================================
-ALTER TABLE public.profiles    ADD COLUMN organization_id UUID REFERENCES public.organizations(id) ON DELETE SET NULL;
-ALTER TABLE public.warehouses  ADD COLUMN organization_id UUID REFERENCES public.organizations(id) ON DELETE CASCADE;
-ALTER TABLE public.product_categories ADD COLUMN organization_id UUID REFERENCES public.organizations(id) ON DELETE CASCADE;
-ALTER TABLE public.products    ADD COLUMN organization_id UUID REFERENCES public.organizations(id) ON DELETE CASCADE;
-ALTER TABLE public.suppliers   ADD COLUMN organization_id UUID REFERENCES public.organizations(id) ON DELETE CASCADE;
-ALTER TABLE public.purchase_orders ADD COLUMN organization_id UUID REFERENCES public.organizations(id) ON DELETE CASCADE;
-ALTER TABLE public.field_applications ADD COLUMN organization_id UUID REFERENCES public.organizations(id) ON DELETE CASCADE;
-ALTER TABLE public.stock_movements ADD COLUMN organization_id UUID REFERENCES public.organizations(id) ON DELETE CASCADE;
+ALTER TABLE public.profiles    ADD COLUMN IF NOT EXISTS organization_id UUID REFERENCES public.organizations(id) ON DELETE SET NULL;
+ALTER TABLE public.warehouses  ADD COLUMN IF NOT EXISTS organization_id UUID REFERENCES public.organizations(id) ON DELETE CASCADE;
+ALTER TABLE public.product_categories ADD COLUMN IF NOT EXISTS organization_id UUID REFERENCES public.organizations(id) ON DELETE CASCADE;
+ALTER TABLE public.products    ADD COLUMN IF NOT EXISTS organization_id UUID REFERENCES public.organizations(id) ON DELETE CASCADE;
+ALTER TABLE public.suppliers   ADD COLUMN IF NOT EXISTS organization_id UUID REFERENCES public.organizations(id) ON DELETE CASCADE;
+ALTER TABLE public.purchase_orders ADD COLUMN IF NOT EXISTS organization_id UUID REFERENCES public.organizations(id) ON DELETE CASCADE;
+ALTER TABLE public.field_applications ADD COLUMN IF NOT EXISTS organization_id UUID REFERENCES public.organizations(id) ON DELETE CASCADE;
+ALTER TABLE public.stock_movements ADD COLUMN IF NOT EXISTS organization_id UUID REFERENCES public.organizations(id) ON DELETE CASCADE;
 
 -- ============================================================
 -- 3. FUNCIÓN HELPER PARA RLS (SECURITY DEFINER evita recursión)
@@ -61,25 +47,46 @@ DELETE FROM public.product_categories WHERE organization_id IS NULL;
 DELETE FROM public.warehouses WHERE organization_id IS NULL;
 
 -- ============================================================
--- 5. ACTUALIZAR POLÍTICAS RLS (org-aware)
+-- 5. POLÍTICAS RLS DE ORGANIZATIONS
+-- (ahora profiles.organization_id ya existe)
+-- ============================================================
+DROP POLICY IF EXISTS "Miembros ven su org" ON public.organizations;
+DROP POLICY IF EXISTS "Admin actualiza su org" ON public.organizations;
+DROP POLICY IF EXISTS "Usuarios crean org" ON public.organizations;
+
+CREATE POLICY "Miembros ven su org" ON public.organizations
+  FOR SELECT USING (
+    id IN (SELECT organization_id FROM public.profiles WHERE id = auth.uid())
+  );
+
+CREATE POLICY "Admin actualiza su org" ON public.organizations
+  FOR UPDATE USING (
+    id IN (SELECT organization_id FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
+  );
+
+CREATE POLICY "Usuarios crean org" ON public.organizations
+  FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+
+-- ============================================================
+-- 6. POLÍTICAS RLS ORG-AWARE EN RESTO DE TABLAS
 -- ============================================================
 
 -- --- PROFILES ---
 DROP POLICY IF EXISTS "Usuarios ven su propio perfil" ON public.profiles;
 DROP POLICY IF EXISTS "Solo admin modifica perfiles" ON public.profiles;
+DROP POLICY IF EXISTS "Ver perfiles de la org" ON public.profiles;
+DROP POLICY IF EXISTS "Usuario actualiza su perfil" ON public.profiles;
+DROP POLICY IF EXISTS "Admin actualiza perfiles de su org" ON public.profiles;
 
--- Ver perfiles de la misma org (o el propio mientras no tenga org aún)
 CREATE POLICY "Ver perfiles de la org" ON public.profiles
   FOR SELECT USING (
     id = auth.uid() OR organization_id = public.get_my_organization_id()
   );
 
--- Usuario actualiza su propio perfil (incluyendo asignar org en onboarding)
 CREATE POLICY "Usuario actualiza su perfil" ON public.profiles
   FOR UPDATE USING (id = auth.uid())
   WITH CHECK (id = auth.uid());
 
--- Admin actualiza cualquier perfil de su org
 CREATE POLICY "Admin actualiza perfiles de su org" ON public.profiles
   FOR UPDATE USING (
     organization_id = public.get_my_organization_id() AND
@@ -89,6 +96,8 @@ CREATE POLICY "Admin actualiza perfiles de su org" ON public.profiles
 -- --- WAREHOUSES ---
 DROP POLICY IF EXISTS "Todos ven warehouses" ON public.warehouses;
 DROP POLICY IF EXISTS "Admin y manager modifican warehouses" ON public.warehouses;
+DROP POLICY IF EXISTS "Ver warehouses de la org" ON public.warehouses;
+DROP POLICY IF EXISTS "Admin/manager gestionan warehouses" ON public.warehouses;
 
 CREATE POLICY "Ver warehouses de la org" ON public.warehouses
   FOR SELECT USING (organization_id = public.get_my_organization_id());
@@ -102,6 +111,8 @@ CREATE POLICY "Admin/manager gestionan warehouses" ON public.warehouses
 -- --- PRODUCT CATEGORIES ---
 DROP POLICY IF EXISTS "Todos ven categorías" ON public.product_categories;
 DROP POLICY IF EXISTS "Solo admin modifica categorías" ON public.product_categories;
+DROP POLICY IF EXISTS "Ver categorías de la org" ON public.product_categories;
+DROP POLICY IF EXISTS "Admin/manager gestionan categorías" ON public.product_categories;
 
 CREATE POLICY "Ver categorías de la org" ON public.product_categories
   FOR SELECT USING (organization_id = public.get_my_organization_id());
@@ -115,6 +126,8 @@ CREATE POLICY "Admin/manager gestionan categorías" ON public.product_categories
 -- --- PRODUCTS ---
 DROP POLICY IF EXISTS "Todos ven productos" ON public.products;
 DROP POLICY IF EXISTS "Admin y manager modifican productos" ON public.products;
+DROP POLICY IF EXISTS "Ver productos de la org" ON public.products;
+DROP POLICY IF EXISTS "Admin/manager gestionan productos" ON public.products;
 
 CREATE POLICY "Ver productos de la org" ON public.products
   FOR SELECT USING (organization_id = public.get_my_organization_id());
@@ -128,6 +141,8 @@ CREATE POLICY "Admin/manager gestionan productos" ON public.products
 -- --- SUPPLIERS ---
 DROP POLICY IF EXISTS "Todos ven proveedores" ON public.suppliers;
 DROP POLICY IF EXISTS "Admin y manager modifican proveedores" ON public.suppliers;
+DROP POLICY IF EXISTS "Ver proveedores de la org" ON public.suppliers;
+DROP POLICY IF EXISTS "Admin/manager gestionan proveedores" ON public.suppliers;
 
 CREATE POLICY "Ver proveedores de la org" ON public.suppliers
   FOR SELECT USING (organization_id = public.get_my_organization_id());
@@ -141,6 +156,8 @@ CREATE POLICY "Admin/manager gestionan proveedores" ON public.suppliers
 -- --- PURCHASE ORDERS ---
 DROP POLICY IF EXISTS "Todos ven órdenes" ON public.purchase_orders;
 DROP POLICY IF EXISTS "Admin y manager gestionan órdenes" ON public.purchase_orders;
+DROP POLICY IF EXISTS "Ver órdenes de la org" ON public.purchase_orders;
+DROP POLICY IF EXISTS "Admin/manager gestionan órdenes" ON public.purchase_orders;
 
 CREATE POLICY "Ver órdenes de la org" ON public.purchase_orders
   FOR SELECT USING (organization_id = public.get_my_organization_id());
@@ -154,6 +171,8 @@ CREATE POLICY "Admin/manager gestionan órdenes" ON public.purchase_orders
 -- --- PURCHASE ORDER ITEMS ---
 DROP POLICY IF EXISTS "Todos ven ítems de órdenes" ON public.purchase_order_items;
 DROP POLICY IF EXISTS "Admin y manager gestionan ítems de órdenes" ON public.purchase_order_items;
+DROP POLICY IF EXISTS "Ver ítems de órdenes de la org" ON public.purchase_order_items;
+DROP POLICY IF EXISTS "Admin/manager gestionan ítems de órdenes" ON public.purchase_order_items;
 
 CREATE POLICY "Ver ítems de órdenes de la org" ON public.purchase_order_items
   FOR SELECT USING (
@@ -170,6 +189,10 @@ CREATE POLICY "Admin/manager gestionan ítems de órdenes" ON public.purchase_or
 DROP POLICY IF EXISTS "Todos ven aplicaciones" ON public.field_applications;
 DROP POLICY IF EXISTS "Usuarios autenticados crean aplicaciones" ON public.field_applications;
 DROP POLICY IF EXISTS "Admin y manager eliminan aplicaciones" ON public.field_applications;
+DROP POLICY IF EXISTS "Ver aplicaciones de la org" ON public.field_applications;
+DROP POLICY IF EXISTS "Usuarios crean aplicaciones de su org" ON public.field_applications;
+DROP POLICY IF EXISTS "Admin/manager actualizan aplicaciones" ON public.field_applications;
+DROP POLICY IF EXISTS "Admin/manager eliminan aplicaciones" ON public.field_applications;
 
 CREATE POLICY "Ver aplicaciones de la org" ON public.field_applications
   FOR SELECT USING (organization_id = public.get_my_organization_id());
@@ -195,6 +218,8 @@ CREATE POLICY "Admin/manager eliminan aplicaciones" ON public.field_applications
 -- --- FIELD APPLICATION ITEMS ---
 DROP POLICY IF EXISTS "Todos ven ítems de aplicaciones" ON public.field_application_items;
 DROP POLICY IF EXISTS "Usuarios autenticados crean ítems de aplicaciones" ON public.field_application_items;
+DROP POLICY IF EXISTS "Ver ítems de aplicaciones de la org" ON public.field_application_items;
+DROP POLICY IF EXISTS "Usuarios crean ítems de sus aplicaciones" ON public.field_application_items;
 
 CREATE POLICY "Ver ítems de aplicaciones de la org" ON public.field_application_items
   FOR SELECT USING (
@@ -209,6 +234,9 @@ CREATE POLICY "Usuarios crean ítems de sus aplicaciones" ON public.field_applic
 -- --- STOCK MOVEMENTS ---
 DROP POLICY IF EXISTS "Todos ven movimientos" ON public.stock_movements;
 DROP POLICY IF EXISTS "Admin y manager crean movimientos" ON public.stock_movements;
+DROP POLICY IF EXISTS "Solo admin elimina movimientos" ON public.stock_movements;
+DROP POLICY IF EXISTS "Ver movimientos de la org" ON public.stock_movements;
+DROP POLICY IF EXISTS "Admin/manager crean movimientos" ON public.stock_movements;
 DROP POLICY IF EXISTS "Solo admin elimina movimientos" ON public.stock_movements;
 
 CREATE POLICY "Ver movimientos de la org" ON public.stock_movements
@@ -228,13 +256,10 @@ CREATE POLICY "Solo admin elimina movimientos" ON public.stock_movements
   );
 
 -- ============================================================
--- 6. NUEVOS CAMPOS PARA ORDEN DE APLICACIÓN
+-- 7. NUEVOS CAMPOS PARA ORDEN DE APLICACIÓN
 -- ============================================================
-
--- Ingrediente activo en productos
 ALTER TABLE public.products ADD COLUMN IF NOT EXISTS active_ingredient TEXT;
 
--- Campos de la orden en field_applications
 ALTER TABLE public.field_applications
   ADD COLUMN IF NOT EXISTS crop TEXT,
   ADD COLUMN IF NOT EXISTS crop_variety TEXT,
@@ -254,12 +279,11 @@ ALTER TABLE public.field_applications
   ADD COLUMN IF NOT EXISTS order_status TEXT NOT NULL DEFAULT 'draft'
     CHECK (order_status IN ('draft', 'sent', 'executed'));
 
--- Dosis por hectárea en ítems
 ALTER TABLE public.field_application_items
   ADD COLUMN IF NOT EXISTS dose_per_ha NUMERIC(10,4);
 
 -- ============================================================
--- 7. FUNCIÓN DE ONBOARDING: crear org y asignar al usuario
+-- 8. FUNCIÓN DE ONBOARDING: crear org y asignar al usuario
 -- ============================================================
 CREATE OR REPLACE FUNCTION public.create_organization_for_user(
   org_name TEXT,
@@ -272,17 +296,14 @@ RETURNS UUID AS $$
 DECLARE
   new_org_id UUID;
 BEGIN
-  -- Crear la organización
   INSERT INTO public.organizations (name, cuit, contact_email, phone, address)
   VALUES (org_name, org_cuit, org_email, org_phone, org_address)
   RETURNING id INTO new_org_id;
 
-  -- Asignar la org al usuario actual y promoverlo a admin
   UPDATE public.profiles
   SET organization_id = new_org_id, role = 'admin'
   WHERE id = auth.uid();
 
-  -- Seed: categorías por defecto
   INSERT INTO public.product_categories (name, type, organization_id) VALUES
     ('Herbicida', 'agroquimico', new_org_id),
     ('Fungicida', 'agroquimico', new_org_id),
@@ -294,7 +315,6 @@ BEGIN
     ('Semilla de Trigo', 'semilla', new_org_id),
     ('Semilla de Girasol', 'semilla', new_org_id);
 
-  -- Seed: depósito por defecto
   INSERT INTO public.warehouses (name, location, description, organization_id) VALUES
     ('Depósito Principal', 'Campo', 'Depósito central de agroquímicos', new_org_id);
 
