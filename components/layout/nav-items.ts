@@ -10,6 +10,7 @@ import {
   Users,
   ActivitySquare,
   BookOpen,
+  Truck,
 } from 'lucide-react'
 
 export const navItems = [
@@ -42,6 +43,12 @@ export const navItems = [
     href: '/movements',
     icon: ArrowLeftRight,
     roles: ['admin', 'manager', 'engineer'],
+  },
+  {
+    label: 'Transferencia',
+    href: '/movements/transfer',
+    icon: Truck,
+    roles: ['admin', 'manager'],
   },
   {
     label: 'Productos',
