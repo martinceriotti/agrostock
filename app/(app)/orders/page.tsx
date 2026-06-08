@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { PageHeader } from '@/components/ui/page-header'
@@ -21,6 +22,7 @@ const STATUS_LABELS: Record<string, { label: string; variant: 'default' | 'secon
 }
 
 export default function OrdersPage() {
+  const router = useRouter()
   const { data: user } = useUser()
   const { data: orders = [], isLoading } = useOrders()
   const canCreate = user?.role === 'admin' || user?.role === 'manager'
@@ -44,6 +46,7 @@ export default function OrdersPage() {
         data={orders}
         isLoading={isLoading}
         emptyMessage="No hay órdenes de compra"
+        onRowClick={(row) => router.push(`/orders/${row.id}`)}
         columns={[
           {
             key: 'order_number',

@@ -22,6 +22,7 @@ interface DataTableProps<T> {
   columns: Column<T>[]
   isLoading?: boolean
   emptyMessage?: string
+  onRowClick?: (row: T) => void
 }
 
 export function DataTable<T extends { id: string }>({
@@ -29,6 +30,7 @@ export function DataTable<T extends { id: string }>({
   columns,
   isLoading,
   emptyMessage = 'No hay datos',
+  onRowClick,
 }: DataTableProps<T>) {
   if (isLoading) {
     return (
@@ -61,7 +63,11 @@ export function DataTable<T extends { id: string }>({
             </TableRow>
           ) : (
             data.map((row) => (
-              <TableRow key={row.id}>
+              <TableRow
+                key={row.id}
+                onClick={onRowClick ? () => onRowClick(row) : undefined}
+                className={onRowClick ? 'cursor-pointer hover:bg-gray-50' : undefined}
+              >
                 {columns.map((col) => (
                   <TableCell key={col.key} className={col.className}>
                     {col.cell(row)}

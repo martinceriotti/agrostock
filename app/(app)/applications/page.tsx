@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { PageHeader } from '@/components/ui/page-header'
@@ -10,8 +11,16 @@ import { Badge } from '@/components/ui/badge'
 import { useApplications } from '@/lib/hooks/use-applications'
 import { Plus, Sprout } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import type { ApplicationRow } from '@/lib/types/app.types'
+
+const STATUS: Record<string, { label: string; className: string }> = {
+  draft:    { label: 'Borrador',  className: 'bg-gray-100 text-gray-600' },
+  sent:     { label: 'Enviada',   className: 'bg-blue-100 text-blue-700' },
+  executed: { label: 'Ejecutada', className: 'bg-green-100 text-green-700' },
+}
 
 export default function ApplicationsPage() {
+  const router = useRouter()
   const { data: applications = [], isLoading } = useApplications()
 
   return (
@@ -31,40 +40,50 @@ export default function ApplicationsPage() {
         data={applications}
         isLoading={isLoading}
         emptyMessage="No hay aplicaciones registradas"
+        onRowClick={(row) => router.push(`/applications/${row.id}`)}
         columns={[
           {
             key: 'field',
             header: 'Lote / Campo',
-            cell: (row) => (
+            cell: (row: ApplicationRow) => (
               <div className="flex items-center gap-2">
                 <Sprout className="h-4 w-4 text-green-600 shrink-0" />
-                <span className="font-medium">{row.field_name}</span>
+                <div>
+                  <p className="font-medium">{row.field_name}</p>
+                  {row.crop && <p className="text-xs text-gray-500">{row.crop}{row.area_ha ? ` · ${row.area_ha} ha` : ''}</p>}
+                </div>
               </div>
             ),
           },
           {
             key: 'date',
             header: 'Fecha',
-            cell: (row) => (
+            cell: (row: ApplicationRow) => (
               <span className="text-sm">
                 {format(new Date(row.application_date), 'dd MMM yyyy', { locale: es })}
               </span>
             ),
           },
           {
+            key: 'status',
+            header: 'Estado',
+            cell: (row: ApplicationRow) => {
+              const s = STATUS[row.order_status] ?? STATUS.draft
+              return <Badge className={cn('text-xs font-medium', s.className)}>{s.label}</Badge>
+            },
+          },
+          {
             key: 'items',
             header: 'Productos',
-            cell: (row) => {
-              const items = row.field_application_items as unknown[]
+            cell: (row: ApplicationRow) => {
+              const items = row.field_application_items
               return (
                 <div className="flex flex-wrap gap-1">
-                  {(items as Array<{ products: { name: string } | null; quantity_used: number; warehouses: { name: string } | null }>)
-                    .slice(0, 3)
-                    .map((item, i) => (
-                      <Badge key={i} variant="outline" className="text-xs">
-                        {item.products?.name} — {item.quantity_used}
-                      </Badge>
-                    ))}
+                  {items.slice(0, 3).map((item, i) => (
+                    <Badge key={i} variant="outline" className="text-xs">
+                      {item.products?.name} — {item.quantity_used}
+                    </Badge>
+                  ))}
                   {items.length > 3 && (
                     <Badge variant="secondary" className="text-xs">+{items.length - 3} más</Badge>
                   )}
@@ -75,15 +94,9 @@ export default function ApplicationsPage() {
           {
             key: 'user',
             header: 'Registrado por',
-            cell: (row) => {
-              const profile = row.profiles as { full_name: string } | null
-              return <span className="text-sm text-gray-500">{profile?.full_name ?? '—'}</span>
-            },
-          },
-          {
-            key: 'notes',
-            header: 'Notas',
-            cell: (row) => <span className="text-sm text-gray-500 truncate max-w-xs block">{row.notes ?? '—'}</span>,
+            cell: (row: ApplicationRow) => (
+              <span className="text-sm text-gray-500">{row.profiles?.full_name ?? '—'}</span>
+            ),
           },
         ]}
       />
