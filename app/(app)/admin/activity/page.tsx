@@ -45,7 +45,7 @@ export default function ActivityPage() {
     queryFn: async (): Promise<ActivityLog[]> => {
       const { data, error } = await supabase
         .from('activity_logs')
-        .select('*, profiles:user_id (full_name)')
+        .select('*, profiles(full_name)')
         .order('created_at', { ascending: false })
         .limit(500)
       if (error) throw error

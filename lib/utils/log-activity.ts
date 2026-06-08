@@ -11,7 +11,7 @@ export async function logActivity(params: {
 }) {
   try {
     const supabase = createClient()
-    await supabase.from('activity_logs').insert({
+    const { error } = await supabase.from('activity_logs').insert({
       user_id: params.userId,
       organization_id: params.orgId,
       action: params.action,
@@ -20,7 +20,8 @@ export async function logActivity(params: {
       entity_name: params.entityName ?? null,
       details: params.details ?? null,
     })
-  } catch {
-    // Never break the main flow
+    if (error) console.error('[logActivity]', error.message, error.details)
+  } catch (e) {
+    console.error('[logActivity] unexpected error', e)
   }
 }
