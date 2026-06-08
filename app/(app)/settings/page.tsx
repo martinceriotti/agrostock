@@ -159,6 +159,7 @@ function CategoriesTab() {
   const { data: categories = [], isLoading } = useCategories()
   const createCategory = useCreateCategory()
   const [showForm, setShowForm] = useState(false)
+  const supabase = createClient()
 
   const form = useForm<ProductCategoryFormData>({
     resolver: zodResolver(productCategorySchema),
@@ -166,7 +167,11 @@ function CategoriesTab() {
   })
 
   async function onSubmit(data: ProductCategoryFormData) {
-    await createCategory.mutateAsync(data)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    const { data: profile } = await supabase.from('profiles').select('organization_id').eq('id', user.id).single()
+    if (!profile?.organization_id) return
+    await createCategory.mutateAsync({ values: data, orgId: profile.organization_id })
     form.reset()
     setShowForm(false)
   }
@@ -256,7 +261,12 @@ function SuppliersTab() {
     if (dialog?.type === 'edit' && dialog.supplier) {
       await updateSupplier.mutateAsync({ id: dialog.supplier.id, values: data })
     } else {
-      await createSupplier.mutateAsync(data)
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data: profile } = await supabase.from('profiles').select('organization_id').eq('id', user.id).single()
+      if (!profile?.organization_id) return
+      await createSupplier.mutateAsync({ values: data, orgId: profile.organization_id })
     }
     setDialog(null)
   }

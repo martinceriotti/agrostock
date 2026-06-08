@@ -1,5 +1,13 @@
 import { z } from 'zod'
 
+export const organizationSchema = z.object({
+  name: z.string().min(1, 'El nombre es requerido'),
+  cuit: z.string().optional(),
+  contact_email: z.string().email('Email inválido').optional().or(z.literal('')),
+  phone: z.string().optional(),
+  address: z.string().optional(),
+})
+
 export const warehouseSchema = z.object({
   name: z.string().min(1, 'El nombre es requerido'),
   location: z.string().optional(),
@@ -14,6 +22,7 @@ export const productCategorySchema = z.object({
 export const productSchema = z.object({
   name: z.string().min(1, 'El nombre es requerido'),
   brand: z.string().optional(),
+  active_ingredient: z.string().optional(),
   category_id: z.string().min(1, 'La categoría es requerida'),
   unit: z.enum(['L', 'kg', 'unidad', 'bolsa']),
   description: z.string().optional(),
@@ -53,6 +62,7 @@ export const receiveItemSchema = z.object({
 export const fieldApplicationItemSchema = z.object({
   product_id: z.string().min(1, 'El producto es requerido'),
   warehouse_id: z.string().min(1, 'El depósito es requerido'),
+  dose_per_ha: z.number().positive().optional().nullable(),
   quantity_used: z.number().positive('La cantidad debe ser mayor a 0'),
 })
 
@@ -60,6 +70,22 @@ export const fieldApplicationSchema = z.object({
   field_name: z.string().min(1, 'El nombre del lote/campo es requerido'),
   application_date: z.string(),
   notes: z.string().optional(),
+  // Orden de aplicación
+  crop: z.string().optional(),
+  crop_variety: z.string().optional(),
+  cycle: z.string().optional(),
+  area_ha: z.number().positive().optional().nullable(),
+  client_name: z.string().optional(),
+  client_email: z.string().email('Email inválido').optional().or(z.literal('')),
+  contractor: z.string().optional(),
+  machine: z.string().optional(),
+  nozzle_type: z.string().optional(),
+  application_rate_lha: z.number().positive().optional().nullable(),
+  min_humidity: z.number().min(0).max(100).optional().nullable(),
+  max_temperature: z.number().optional().nullable(),
+  max_wind_speed: z.number().min(0).optional().nullable(),
+  wind_direction: z.string().optional(),
+  withholding_period: z.string().optional(),
   items: z.array(fieldApplicationItemSchema).min(1, 'Agregá al menos un producto'),
 })
 
@@ -70,6 +96,7 @@ export const stockAdjustmentSchema = z.object({
   notes: z.string().min(1, 'El motivo del ajuste es requerido'),
 })
 
+export type OrganizationFormData = z.infer<typeof organizationSchema>
 export type WarehouseFormData = z.infer<typeof warehouseSchema>
 export type ProductCategoryFormData = z.infer<typeof productCategorySchema>
 export type ProductFormData = z.infer<typeof productSchema>

@@ -65,12 +65,12 @@ export function useCreateOrder() {
   const qc = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ values, userId }: { values: PurchaseOrderFormData; userId: string }) => {
+    mutationFn: async ({ values, userId, orgId }: { values: PurchaseOrderFormData; userId: string; orgId: string }) => {
       const { items, ...orderData } = values
 
       const { data: order, error: orderError } = await supabase
         .from('purchase_orders')
-        .insert({ ...orderData, created_by: userId })
+        .insert({ ...orderData, created_by: userId, organization_id: orgId })
         .select()
         .single()
 
@@ -103,10 +103,12 @@ export function useReceiveOrder() {
       orderId,
       items,
       userId,
+      orgId,
     }: {
       orderId: string
       items: Array<{ id: string; quantity_received: number; product_id: string; warehouse_id: string; unit_price: number | null; currency: string }>
       userId: string
+      orgId: string
     }) => {
       for (const item of items) {
         if (item.quantity_received <= 0) continue
@@ -127,6 +129,7 @@ export function useReceiveOrder() {
           currency: item.currency as 'ARS' | 'USD',
           reference_id: item.id,
           created_by: userId,
+          organization_id: orgId,
         })
 
         if (movError) throw movError

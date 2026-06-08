@@ -78,7 +78,8 @@ export default function WarehousesPage() {
     if (dialog?.type === 'edit' && dialog.warehouse) {
       await updateWarehouse.mutateAsync({ id: dialog.warehouse.id, values: data })
     } else {
-      await createWarehouse.mutateAsync(data)
+      if (!user?.organization_id) return
+      await createWarehouse.mutateAsync({ values: data, orgId: user.organization_id })
     }
     setDialog(null)
   }

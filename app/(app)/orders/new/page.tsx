@@ -46,10 +46,9 @@ export default function NewOrderPage() {
   const currency = form.watch('currency')
 
   async function onSubmit(data: PurchaseOrderFormData) {
-    if (!user) return
-    // Sync items currency with order currency
+    if (!user?.organization_id) return
     const values = { ...data, items: data.items.map(i => ({ ...i, currency: data.currency })) }
-    const order = await createOrder.mutateAsync({ values, userId: user.id }) as { id: string }
+    const order = await createOrder.mutateAsync({ values, userId: user.id, orgId: user.organization_id }) as { id: string }
     router.push(`/orders/${order.id}`)
   }
 

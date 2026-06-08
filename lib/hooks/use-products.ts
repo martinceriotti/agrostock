@@ -6,12 +6,11 @@ import type { ProductFormData, ProductCategoryFormData, WarehouseFormData, Suppl
 import type { ProductCategory, Warehouse, Supplier } from '@/lib/types/database.types'
 import { toast } from 'sonner'
 
-// ─── Typed interfaces for joined queries ────────────────────
-
 export interface ProductWithCategory {
   id: string
   name: string
   brand: string | null
+  active_ingredient: string | null
   category_id: string
   unit: 'L' | 'kg' | 'unidad' | 'bolsa'
   description: string | null
@@ -41,8 +40,12 @@ export function useCreateProduct() {
   const supabase = createClient()
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (values: ProductFormData) => {
-      const { data, error } = await supabase.from('products').insert(values).select().single()
+    mutationFn: async ({ values, orgId }: { values: ProductFormData; orgId: string }) => {
+      const { data, error } = await supabase
+        .from('products')
+        .insert({ ...values, organization_id: orgId })
+        .select()
+        .single()
       if (error) throw error
       return data
     },
@@ -105,8 +108,12 @@ export function useCreateCategory() {
   const supabase = createClient()
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (values: ProductCategoryFormData) => {
-      const { data, error } = await supabase.from('product_categories').insert(values).select().single()
+    mutationFn: async ({ values, orgId }: { values: ProductCategoryFormData; orgId: string }) => {
+      const { data, error } = await supabase
+        .from('product_categories')
+        .insert({ ...values, organization_id: orgId })
+        .select()
+        .single()
       if (error) throw error
       return data
     },
@@ -136,8 +143,12 @@ export function useCreateWarehouse() {
   const supabase = createClient()
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (values: WarehouseFormData) => {
-      const { data, error } = await supabase.from('warehouses').insert(values).select().single()
+    mutationFn: async ({ values, orgId }: { values: WarehouseFormData; orgId: string }) => {
+      const { data, error } = await supabase
+        .from('warehouses')
+        .insert({ ...values, organization_id: orgId })
+        .select()
+        .single()
       if (error) throw error
       return data
     },
@@ -184,8 +195,12 @@ export function useCreateSupplier() {
   const supabase = createClient()
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (values: SupplierFormData) => {
-      const { data, error } = await supabase.from('suppliers').insert(values).select().single()
+    mutationFn: async ({ values, orgId }: { values: SupplierFormData; orgId: string }) => {
+      const { data, error } = await supabase
+        .from('suppliers')
+        .insert({ ...values, organization_id: orgId })
+        .select()
+        .single()
       if (error) throw error
       return data
     },

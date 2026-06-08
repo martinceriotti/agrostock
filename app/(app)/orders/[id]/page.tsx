@@ -64,7 +64,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
       unit_price: item.unit_price,
       currency: item.currency,
     }))
-    await receiveOrder.mutateAsync({ orderId: order.id, items: itemsToReceive, userId: user.id })
+    await receiveOrder.mutateAsync({ orderId: order.id, items: itemsToReceive, userId: user.id, orgId: user.organization_id! })
     setReceiveOpen(false)
   }
 

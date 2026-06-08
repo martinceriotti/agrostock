@@ -28,7 +28,8 @@ export default function ProductsPage() {
     if (dialog?.type === 'edit' && dialog.product) {
       await updateProduct.mutateAsync({ id: dialog.product.id, values: data })
     } else {
-      await createProduct.mutateAsync(data)
+      if (!user?.organization_id) return
+      await createProduct.mutateAsync({ values: data, orgId: user.organization_id })
     }
     setDialog(null)
   }

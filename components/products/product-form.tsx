@@ -27,6 +27,7 @@ export function ProductForm({ defaultValues, onSubmit, onCancel, isLoading }: Pr
     defaultValues: {
       name: defaultValues?.name ?? '',
       brand: defaultValues?.brand ?? '',
+      active_ingredient: defaultValues?.active_ingredient ?? '',
       category_id: defaultValues?.category_id ?? '',
       unit: defaultValues?.unit ?? 'L',
       description: defaultValues?.description ?? '',
@@ -49,6 +50,11 @@ export function ProductForm({ defaultValues, onSubmit, onCancel, isLoading }: Pr
           <Label htmlFor="brand">Marca</Label>
           <Input id="brand" {...form.register('brand')} placeholder="Ej: Monsanto" />
         </div>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label htmlFor="active_ingredient">Ingrediente activo</Label>
+        <Input id="active_ingredient" {...form.register('active_ingredient')} placeholder="Ej: Glifosato 64.000 SL" />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">

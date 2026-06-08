@@ -35,35 +35,48 @@ export default function NewApplicationPage() {
       field_name: '',
       application_date: format(new Date(), 'yyyy-MM-dd'),
       notes: '',
-      items: [{ product_id: '', warehouse_id: '', quantity_used: 0 }],
+      crop: '',
+      crop_variety: '',
+      cycle: '',
+      area_ha: null,
+      client_name: '',
+      client_email: '',
+      contractor: '',
+      machine: '',
+      nozzle_type: '',
+      application_rate_lha: null,
+      min_humidity: null,
+      max_temperature: null,
+      max_wind_speed: null,
+      wind_direction: '',
+      withholding_period: '',
+      items: [{ product_id: '', warehouse_id: '', dose_per_ha: null, quantity_used: 0 }],
     },
   })
 
   const { fields, append, remove } = useFieldArray({ control: form.control, name: 'items' })
+  const areaHa = form.watch('area_ha')
 
   function getAvailableStock(productId: string, warehouseId: string) {
     if (!productId || !warehouseId) return null
-    const entry = stockData.find(
-      (s) => s.product_id === productId && s.warehouse_id === warehouseId
-    )
+    const entry = stockData.find(s => s.product_id === productId && s.warehouse_id === warehouseId)
     return entry?.quantity ?? 0
   }
 
-  async function onSubmit(data: FieldApplicationFormData) {
-    if (!user) return
-
-    for (const item of data.items) {
-      const available = getAvailableStock(item.product_id, item.warehouse_id)
-      if (available !== null && item.quantity_used > available) {
-        const product = products.find(p => p.id === item.product_id)
-        form.setError('root', {
-          message: `Stock insuficiente de ${product?.name}. Disponible: ${available} ${product?.unit}`
-        })
-        return
-      }
+  function handleDoseChange(index: number, dose: number) {
+    if (areaHa && dose > 0) {
+      form.setValue(`items.${index}.quantity_used`, Number((dose * areaHa).toFixed(3)))
     }
+  }
 
-    await createApplication.mutateAsync({ values: data, userId: user.id })
+  async function onSubmit(data: FieldApplicationFormData) {
+    if (!user?.organization_id) return
+
+    await createApplication.mutateAsync({
+      values: data,
+      userId: user.id,
+      orgId: user.organization_id,
+    })
     router.push('/applications')
   }
 
@@ -73,45 +86,143 @@ export default function NewApplicationPage() {
         <Link href="/applications" className={cn(buttonVariants({ variant: 'ghost' }), 'gap-2 mb-2 -ml-2')}>
           <ArrowLeft className="h-4 w-4" />Volver
         </Link>
-        <PageHeader title="Nueva Aplicación en Campo" />
+        <PageHeader title="Nueva Orden de Aplicación" />
       </div>
 
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+
+        {/* Datos del lote */}
         <Card>
           <CardHeader><CardTitle className="text-base">Datos del lote</CardTitle></CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor="field_name">Nombre del lote / campo *</Label>
-              <Input id="field_name" {...form.register('field_name')} placeholder="Ej: Lote Norte, Campo La Esperanza" />
+              <Label htmlFor="field_name">Lote / campo *</Label>
+              <Input id="field_name" {...form.register('field_name')} placeholder="Ej: Garnero 38" />
               {form.formState.errors.field_name && (
                 <p className="text-xs text-red-500">{form.formState.errors.field_name.message}</p>
               )}
             </div>
-
             <div className="space-y-1.5">
-              <Label htmlFor="application_date">Fecha de aplicación *</Label>
+              <Label htmlFor="application_date">Fecha *</Label>
               <Input id="application_date" type="date" {...form.register('application_date')} />
             </div>
-
-            <div className="sm:col-span-2 space-y-1.5">
-              <Label htmlFor="notes">Notas</Label>
-              <Textarea id="notes" {...form.register('notes')} rows={2} placeholder="Observaciones, dosis, condiciones climáticas..." />
+            <div className="space-y-1.5">
+              <Label htmlFor="crop">Cultivo</Label>
+              <Input id="crop" {...form.register('crop')} placeholder="Ej: Trigo, Soja, Maíz" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="crop_variety">Variedad / Híbrido</Label>
+              <Input id="crop_variety" {...form.register('crop_variety')} placeholder="Ej: DM 4615" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="cycle">Ciclo</Label>
+              <Input id="cycle" {...form.register('cycle')} placeholder="Ej: 2026/2027" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="area_ha">Superficie (ha)</Label>
+              <Input
+                id="area_ha"
+                type="number"
+                step="0.1"
+                min="0"
+                {...form.register('area_ha', { valueAsNumber: true, setValueAs: v => v === '' ? null : Number(v) })}
+                placeholder="Ej: 38"
+              />
             </div>
           </CardContent>
         </Card>
 
+        {/* Destinatario */}
+        <Card>
+          <CardHeader><CardTitle className="text-base">Destinatario</CardTitle></CardHeader>
+          <CardContent className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="client_name">Nombre / Productor</Label>
+              <Input id="client_name" {...form.register('client_name')} placeholder="Nombre del productor" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="client_email">Email</Label>
+              <Input id="client_email" type="email" {...form.register('client_email')} placeholder="Para enviar la orden" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="contractor">Contratista</Label>
+              <Input id="contractor" {...form.register('contractor')} placeholder="Nombre del contratista" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="machine">Máquina</Label>
+              <Input id="machine" {...form.register('machine')} placeholder="Ej: Pulverizadora John Deere" />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Condiciones de aplicación */}
+        <Card>
+          <CardHeader><CardTitle className="text-base">Condiciones de aplicación</CardTitle></CardHeader>
+          <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="nozzle_type">Pastilla</Label>
+              <Input id="nozzle_type" {...form.register('nozzle_type')} placeholder="Ej: Cono hueco" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="application_rate_lha">Tasa (L/ha)</Label>
+              <Input
+                id="application_rate_lha"
+                type="number"
+                step="1"
+                {...form.register('application_rate_lha', { valueAsNumber: true, setValueAs: v => v === '' ? null : Number(v) })}
+                placeholder="Ej: 70"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="min_humidity">HR mínima (%)</Label>
+              <Input
+                id="min_humidity"
+                type="number"
+                {...form.register('min_humidity', { valueAsNumber: true, setValueAs: v => v === '' ? null : Number(v) })}
+                placeholder="Ej: 50"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="max_temperature">Temperatura máx. (°C)</Label>
+              <Input
+                id="max_temperature"
+                type="number"
+                {...form.register('max_temperature', { valueAsNumber: true, setValueAs: v => v === '' ? null : Number(v) })}
+                placeholder="Ej: 30"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="max_wind_speed">Viento máx. (km/h)</Label>
+              <Input
+                id="max_wind_speed"
+                type="number"
+                {...form.register('max_wind_speed', { valueAsNumber: true, setValueAs: v => v === '' ? null : Number(v) })}
+                placeholder="Ej: 10"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="wind_direction">Dirección del viento</Label>
+              <Input id="wind_direction" {...form.register('wind_direction')} placeholder="Ej: Norte" />
+            </div>
+            <div className="sm:col-span-2 lg:col-span-3 space-y-1.5">
+              <Label htmlFor="withholding_period">Carencia</Label>
+              <Input id="withholding_period" {...form.register('withholding_period')} placeholder="Ej: 21 días" />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Insumos */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-base">Productos utilizados</CardTitle>
+            <CardTitle className="text-base">Insumos</CardTitle>
             <Button
               type="button"
               variant="outline"
               size="sm"
               className="gap-2"
-              onClick={() => append({ product_id: '', warehouse_id: '', quantity_used: 0 })}
+              onClick={() => append({ product_id: '', warehouse_id: '', dose_per_ha: null, quantity_used: 0 })}
             >
-              <Plus className="h-4 w-4" />
-              Agregar producto
+              <Plus className="h-4 w-4" />Agregar
             </Button>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -132,7 +243,7 @@ export default function NewApplicationPage() {
                 <div key={field.id} className="p-3 bg-gray-50 rounded-lg border space-y-3">
                   <div className="grid gap-2 sm:grid-cols-2">
                     <div className="space-y-1">
-                      <Label className="text-xs">Producto</Label>
+                      <Label className="text-xs">Producto *</Label>
                       <Select
                         value={form.watch(`items.${index}.product_id`)}
                         onValueChange={(v) => form.setValue(`items.${index}.product_id`, v ?? '')}
@@ -149,15 +260,14 @@ export default function NewApplicationPage() {
                         </SelectContent>
                       </Select>
                     </div>
-
                     <div className="space-y-1">
-                      <Label className="text-xs">Depósito origen</Label>
+                      <Label className="text-xs">Depósito origen *</Label>
                       <Select
                         value={form.watch(`items.${index}.warehouse_id`)}
                         onValueChange={(v) => form.setValue(`items.${index}.warehouse_id`, v ?? '')}
                       >
                         <SelectTrigger className="bg-white">
-                          <SelectValue placeholder="Seleccionar depósito" />
+                          <SelectValue placeholder="Depósito" />
                         </SelectTrigger>
                         <SelectContent>
                           {warehouses.map((w) => (
@@ -168,10 +278,28 @@ export default function NewApplicationPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-end gap-3">
-                    <div className="flex-1 space-y-1">
+                  <div className="grid gap-2 sm:grid-cols-2 items-end">
+                    <div className="space-y-1">
                       <Label className="text-xs">
-                        Cantidad utilizada {selectedProduct ? `(${selectedProduct.unit})` : ''}
+                        Dosis/ha {selectedProduct ? `(${selectedProduct.unit}/ha)` : ''}
+                      </Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.001"
+                        className="bg-white"
+                        placeholder="Ej: 1.8"
+                        {...form.register(`items.${index}.dose_per_ha`, {
+                          valueAsNumber: true,
+                          setValueAs: v => v === '' ? null : Number(v),
+                          onChange: (e) => handleDoseChange(index, Number(e.target.value)),
+                        })}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">
+                        Total {selectedProduct ? `(${selectedProduct.unit})` : ''}
+                        {areaHa ? ` — ${areaHa} ha` : ''}
                       </Label>
                       <Input
                         type="number"
@@ -182,28 +310,34 @@ export default function NewApplicationPage() {
                       />
                       {availableStock !== null && (
                         <p className={`text-xs ${availableStock === 0 ? 'text-red-500' : 'text-gray-500'}`}>
-                          Disponible en depósito: {availableStock} {selectedProduct?.unit}
+                          Stock disponible: {availableStock} {selectedProduct?.unit}
                         </p>
                       )}
                     </div>
+                  </div>
 
+                  <div className="flex justify-end">
                     <Button
                       type="button"
                       variant="ghost"
-                      size="icon"
+                      size="sm"
                       onClick={() => remove(index)}
-                      className="h-9 w-9 text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0"
+                      className="h-8 text-red-500 hover:text-red-700 hover:bg-red-50"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-4 w-4 mr-1" />Quitar
                     </Button>
                   </div>
                 </div>
               )
             })}
+          </CardContent>
+        </Card>
 
-            {form.formState.errors.items?.root && (
-              <p className="text-sm text-red-500">{form.formState.errors.items.root.message}</p>
-            )}
+        {/* Notas */}
+        <Card>
+          <CardHeader><CardTitle className="text-base">Observaciones</CardTitle></CardHeader>
+          <CardContent>
+            <Textarea {...form.register('notes')} rows={2} placeholder="Observaciones adicionales..." />
           </CardContent>
         </Card>
 
@@ -214,7 +348,7 @@ export default function NewApplicationPage() {
           <Button type="submit" disabled={createApplication.isPending} className="bg-green-700 hover:bg-green-800">
             {createApplication.isPending ? (
               <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Guardando...</>
-            ) : 'Registrar aplicación'}
+            ) : 'Guardar orden (borrador)'}
           </Button>
         </div>
       </form>

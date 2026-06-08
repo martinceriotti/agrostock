@@ -1,5 +1,4 @@
 // Tipos enriquecidos para queries con joins de Supabase
-// (reemplazan la inferencia automática que se genera con el CLI real de Supabase)
 
 export interface StockEntry {
   product_id: string
@@ -71,6 +70,23 @@ export interface ApplicationRow {
   notes: string | null
   created_by: string
   created_at: string
+  order_status: 'draft' | 'sent' | 'executed'
+  // Orden de aplicación
+  crop: string | null
+  crop_variety: string | null
+  cycle: string | null
+  area_ha: number | null
+  client_name: string | null
+  client_email: string | null
+  contractor: string | null
+  machine: string | null
+  nozzle_type: string | null
+  application_rate_lha: number | null
+  min_humidity: number | null
+  max_temperature: number | null
+  max_wind_speed: number | null
+  wind_direction: string | null
+  withholding_period: string | null
   profiles: { id: string; full_name: string } | null
   field_application_items: ApplicationItemRow[]
 }
@@ -81,6 +97,7 @@ export interface ApplicationItemRow {
   product_id: string
   warehouse_id: string
   quantity_used: number
-  products: { id: string; name: string; unit: string } | null
+  dose_per_ha: number | null
+  products: { id: string; name: string; unit: string; active_ingredient: string | null } | null
   warehouses: { id: string; name: string } | null
 }
