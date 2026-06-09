@@ -158,21 +158,24 @@ export function useCreateSilo() {
   })
 }
 
-// ── Actualizar estado del silo ────────────────────────────────
-export function useUpdateSiloStatus() {
+// ── Actualizar silo ───────────────────────────────────────────
+export function useUpdateSilo() {
   const supabase = createClient()
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: Silo['status'] }) => {
-      const { error } = await supabase
+    mutationFn: async ({ id, ...values }: { id: string } & Partial<Omit<Silo, 'id' | 'organization_id' | 'api_key' | 'created_at'>>) => {
+      const { data, error } = await supabase
         .from('silos')
-        .update({ status })
+        .update(values)
         .eq('id', id)
+        .select()
+        .single()
       if (error) throw error
+      return data as unknown as Silo
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['silos'] })
-      toast.success('Estado actualizado')
+      toast.success('Silo actualizado')
     },
     onError: (e: Error) => toast.error(e.message),
   })
