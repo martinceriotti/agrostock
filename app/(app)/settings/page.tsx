@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
 import { PageHeader } from '@/components/ui/page-header'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -17,139 +17,265 @@ import {
 } from '@/lib/hooks/use-products'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
 import { productCategorySchema, supplierSchema, type ProductCategoryFormData, type SupplierFormData } from '@/lib/validations'
-import { Plus, Loader2, UserPlus } from 'lucide-react'
+import { Plus, Loader2, Pencil, Trash2, UserCheck, Mail, KeyRound } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { format } from 'date-fns'
+import { es } from 'date-fns/locale'
 import type { Supplier } from '@/lib/types/database.types'
+import { getOrgUsers, inviteUser, updateUserRole, updateUserName, deleteUser, sendPasswordReset } from '@/app/actions/admin'
 
 // ─── Users tab ──────────────────────────────────────────────────────
 
-function UsersTab() {
-  const supabase = createClient()
-  const qc = useQueryClient()
-  const [inviteEmail, setInviteEmail] = useState('')
-  const [inviteName, setInviteName] = useState('')
-  const [inviteRole, setInviteRole] = useState<'admin' | 'manager' | 'engineer'>('engineer')
-  const [loading, setLoading] = useState(false)
+type OrgUser = { id: string; full_name: string; email: string; role: string; created_at: string }
 
-  type ProfileRow = { id: string; full_name: string; role: 'admin' | 'manager' | 'engineer'; created_at: string }
-  const { data: users = [], isLoading } = useQuery<ProfileRow[]>({
-    queryKey: ['profiles'],
-    queryFn: async () => {
-      const { data } = await supabase.from('profiles').select('*').order('full_name')
-      return (data ?? []) as ProfileRow[]
-    },
+const ROLE_LABELS = { admin: 'Admin', manager: 'Manager', engineer: 'Ingeniero' }
+const ROLE_COLORS: Record<string, string> = {
+  admin: 'bg-red-100 text-red-700',
+  manager: 'bg-blue-100 text-blue-700',
+  engineer: 'bg-green-100 text-green-700',
+}
+
+const inviteSchema = z.object({
+  full_name: z.string().min(2, 'Nombre requerido'),
+  email: z.string().email('Email inválido'),
+  role: z.enum(['admin', 'manager', 'engineer']),
+})
+type InviteData = z.infer<typeof inviteSchema>
+
+function UsersTab() {
+  const qc = useQueryClient()
+  const [isPending, startTransition] = useTransition()
+  const [showInvite, setShowInvite] = useState(false)
+  const [editUser, setEditUser] = useState<OrgUser | null>(null)
+  const [editName, setEditName] = useState('')
+  const [editRole, setEditRole] = useState<'admin' | 'manager' | 'engineer'>('engineer')
+
+  const { data: result, isLoading } = useQuery({
+    queryKey: ['admin-users'],
+    queryFn: () => getOrgUsers(),
   })
 
-  async function handleInvite(e: React.FormEvent) {
-    e.preventDefault()
-    setLoading(true)
-    try {
-      const { error } = await supabase.auth.admin.inviteUserByEmail(inviteEmail, {
-        data: { full_name: inviteName, role: inviteRole },
-      })
-      if (error) throw error
-      toast.success(`Invitación enviada a ${inviteEmail}`)
-      setInviteEmail('')
-      setInviteName('')
-      qc.invalidateQueries({ queryKey: ['profiles'] })
-    } catch {
-      toast.error('Error al enviar la invitación. Verificá que usás la Service Role Key.')
-    } finally {
-      setLoading(false)
-    }
+  const users = result?.success ? result.data ?? [] : []
+  const queryError = result && !result.success ? result.error : null
+
+  const form = useForm<InviteData>({
+    resolver: zodResolver(inviteSchema),
+    defaultValues: { full_name: '', email: '', role: 'engineer' },
+  })
+
+  function openEdit(user: OrgUser) {
+    setEditUser(user)
+    setEditName(user.full_name)
+    setEditRole(user.role as 'admin' | 'manager' | 'engineer')
   }
 
-  async function handleRoleChange(userId: string, newRole: 'admin' | 'manager' | 'engineer') {
-    const { error } = await supabase.from('profiles').update({ role: newRole } as never).eq('id', userId)
-    if (error) {
-      toast.error('Error al cambiar el rol')
-    } else {
-      toast.success('Rol actualizado')
-      qc.invalidateQueries({ queryKey: ['profiles'] })
-    }
+  function handleInvite(data: InviteData) {
+    startTransition(async () => {
+      const res = await inviteUser(data)
+      if (!res.success) { toast.error(res.error); return }
+      toast.success(`Invitación enviada a ${data.email}`)
+      form.reset()
+      setShowInvite(false)
+      qc.invalidateQueries({ queryKey: ['admin-users'] })
+    })
   }
 
-  const ROLE_LABELS = { admin: 'Admin', manager: 'Manager', engineer: 'Ingeniero' }
+  function handleSaveEdit() {
+    if (!editUser) return
+    startTransition(async () => {
+      const r1 = await updateUserName(editUser.id, editName)
+      if (!r1.success) { toast.error(r1.error); return }
+      const r2 = await updateUserRole(editUser.id, editRole)
+      if (!r2.success) { toast.error(r2.error); return }
+      toast.success('Usuario actualizado')
+      setEditUser(null)
+      qc.invalidateQueries({ queryKey: ['admin-users'] })
+    })
+  }
+
+  function handleDelete(user: OrgUser) {
+    if (!confirm(`¿Eliminar al usuario ${user.full_name}? Esta acción no se puede deshacer.`)) return
+    startTransition(async () => {
+      const res = await deleteUser(user.id)
+      if (!res.success) { toast.error(res.error); return }
+      toast.success(`Usuario ${user.full_name} eliminado`)
+      qc.invalidateQueries({ queryKey: ['admin-users'] })
+    })
+  }
+
+  function handlePasswordReset(user: OrgUser) {
+    if (!confirm(`¿Enviar email de restablecimiento de contraseña a ${user.email}?`)) return
+    startTransition(async () => {
+      const res = await sendPasswordReset(user.email)
+      if (!res.success) { toast.error(res.error); return }
+      toast.success(`Email de restablecimiento enviado a ${user.email}`)
+    })
+  }
 
   return (
-    <div className="space-y-6">
-      {/* Invitar usuario */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm flex items-center gap-2">
-            <UserPlus className="h-4 w-4" />
-            Invitar nuevo usuario
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleInvite} className="grid gap-3 sm:grid-cols-3">
+    <div className="max-w-4xl space-y-4">
+      <div className="flex justify-end">
+        <Button onClick={() => setShowInvite(true)} className="bg-green-700 hover:bg-green-800 gap-2">
+          <Plus className="h-4 w-4" />
+          Nuevo usuario
+        </Button>
+      </div>
+
+      {queryError && (
+        <Card className="border-amber-200 bg-amber-50">
+          <CardContent className="pt-4 text-sm text-amber-800">
+            <strong>Atención:</strong> {queryError}
+          </CardContent>
+        </Card>
+      )}
+
+      {isLoading ? (
+        <div className="space-y-2">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="h-16 bg-gray-100 rounded-lg animate-pulse" />
+          ))}
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {users.map((user) => (
+            <Card key={user.id} className="hover:shadow-sm transition-shadow">
+              <CardContent className="py-3 px-4 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="h-9 w-9 rounded-full bg-green-100 flex items-center justify-center shrink-0">
+                    <span className="text-sm font-semibold text-green-700">
+                      {user.full_name.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-medium text-sm truncate">{user.full_name}</p>
+                    <div className="flex items-center gap-1 text-xs text-gray-500">
+                      <Mail className="h-3 w-3 shrink-0" />
+                      <span className="truncate">{user.email}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  <Badge className={`text-xs ${ROLE_COLORS[user.role] ?? 'bg-gray-100 text-gray-600'}`}>
+                    {ROLE_LABELS[user.role as keyof typeof ROLE_LABELS] ?? user.role}
+                  </Badge>
+                  <span className="text-xs text-gray-400 hidden sm:block">
+                    {format(new Date(user.created_at), 'dd MMM yyyy', { locale: es })}
+                  </span>
+                  <div className="flex gap-1">
+                    <Button
+                      variant="ghost" size="icon"
+                      className="h-8 w-8 text-gray-500 hover:text-blue-600 hover:bg-blue-50"
+                      onClick={() => handlePasswordReset(user)}
+                      disabled={isPending}
+                      title="Restablecer contraseña"
+                    >
+                      <KeyRound className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(user)}>
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      variant="ghost" size="icon"
+                      className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+                      onClick={() => handleDelete(user)}
+                      disabled={isPending}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+          {users.length === 0 && (
+            <div className="text-center py-12 text-gray-400">No hay usuarios en la organización</div>
+          )}
+        </div>
+      )}
+
+      {/* Dialog: Nuevo usuario */}
+      <Dialog open={showInvite} onOpenChange={setShowInvite}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>Invitar nuevo usuario</DialogTitle></DialogHeader>
+          <p className="text-sm text-gray-500 -mt-2">El usuario recibirá un email para configurar su contraseña.</p>
+          <form onSubmit={form.handleSubmit(handleInvite)} className="space-y-4 mt-2">
             <div className="space-y-1.5">
-              <Label>Nombre completo</Label>
-              <Input value={inviteName} onChange={(e) => setInviteName(e.target.value)} placeholder="Juan Pérez" required />
+              <Label>Nombre completo *</Label>
+              <Input {...form.register('full_name')} placeholder="Juan Pérez" autoFocus />
+              {form.formState.errors.full_name && (
+                <p className="text-xs text-red-500">{form.formState.errors.full_name.message}</p>
+              )}
             </div>
             <div className="space-y-1.5">
-              <Label>Email</Label>
-              <Input type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} placeholder="usuario@empresa.com" required />
+              <Label>Email *</Label>
+              <Input type="email" {...form.register('email')} placeholder="juan@empresa.com" />
+              {form.formState.errors.email && (
+                <p className="text-xs text-red-500">{form.formState.errors.email.message}</p>
+              )}
             </div>
             <div className="space-y-1.5">
-              <Label>Rol</Label>
-              <Select value={inviteRole} onValueChange={(v) => setInviteRole(v as typeof inviteRole)} items={{ engineer: 'Ingeniero (solo consulta)', manager: 'Manager (compras + aplicaciones)', admin: 'Admin (acceso total)' }}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
+              <Label>Rol *</Label>
+              <Select
+                value={form.watch('role')}
+                onValueChange={(v) => form.setValue('role', v as InviteData['role'])}
+                items={{ engineer: 'Ingeniero — solo consulta', manager: 'Manager — compras y aplicaciones', admin: 'Admin — acceso total' }}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="engineer">Ingeniero (solo consulta)</SelectItem>
-                  <SelectItem value="manager">Manager (compras + aplicaciones)</SelectItem>
-                  <SelectItem value="admin">Admin (acceso total)</SelectItem>
+                  <SelectItem value="engineer">Ingeniero — solo consulta</SelectItem>
+                  <SelectItem value="manager">Manager — compras y aplicaciones</SelectItem>
+                  <SelectItem value="admin">Admin — acceso total</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            <div className="sm:col-span-3 flex justify-end">
-              <Button type="submit" disabled={loading} className="bg-green-700 hover:bg-green-800 gap-2">
-                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
+            <div className="flex justify-end gap-2 pt-1">
+              <Button type="button" variant="outline" onClick={() => setShowInvite(false)}>Cancelar</Button>
+              <Button type="submit" disabled={isPending} className="bg-green-700 hover:bg-green-800 gap-2">
+                {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserCheck className="h-4 w-4" />}
                 Enviar invitación
               </Button>
             </div>
           </form>
-        </CardContent>
-      </Card>
+        </DialogContent>
+      </Dialog>
 
-      {/* Lista de usuarios */}
-      <DataTable
-        data={users}
-        isLoading={isLoading}
-        emptyMessage="No hay usuarios"
-        columns={[
-          {
-            key: 'name',
-            header: 'Usuario',
-            cell: (row) => <p className="font-medium">{row.full_name}</p>,
-          },
-          {
-            key: 'role',
-            header: 'Rol',
-            cell: (row) => (
+      {/* Dialog: Editar usuario */}
+      <Dialog open={!!editUser} onOpenChange={(open) => !open && setEditUser(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>Editar usuario</DialogTitle></DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div className="space-y-1.5">
+              <Label>Nombre completo</Label>
+              <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Rol</Label>
               <Select
-                value={row.role}
-                onValueChange={(v) => handleRoleChange(row.id, v as 'admin' | 'manager' | 'engineer')}
+                value={editRole}
+                onValueChange={(v) => setEditRole(v as typeof editRole)}
                 items={{ engineer: 'Ingeniero', manager: 'Manager', admin: 'Admin' }}
               >
-                <SelectTrigger className="w-36 h-8">
-                  <SelectValue />
-                </SelectTrigger>
+                <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="engineer">Ingeniero</SelectItem>
                   <SelectItem value="manager">Manager</SelectItem>
                   <SelectItem value="admin">Admin</SelectItem>
                 </SelectContent>
               </Select>
-            ),
-          },
-        ]}
-      />
+            </div>
+            <div className="flex justify-end gap-2 pt-1">
+              <Button variant="outline" onClick={() => setEditUser(null)}>Cancelar</Button>
+              <Button onClick={handleSaveEdit} disabled={isPending} className="bg-green-700 hover:bg-green-800">
+                {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Guardar'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

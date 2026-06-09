@@ -14,11 +14,11 @@ import { Plus, Eye } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { OrderRow } from '@/lib/types/app.types'
 
-const STATUS_LABELS: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
-  pending: { label: 'Pendiente', variant: 'secondary' },
-  partial: { label: 'Parcial', variant: 'default' },
-  received: { label: 'Recibida', variant: 'outline' },
-  cancelled: { label: 'Cancelada', variant: 'destructive' },
+const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
+  pending:   { label: 'Pendiente', className: 'bg-amber-100 text-amber-800 border-amber-200' },
+  partial:   { label: 'Parcial',   className: 'bg-blue-100 text-blue-700 border-blue-200' },
+  received:  { label: 'Recibida',  className: 'bg-green-100 text-green-800 border-green-200' },
+  cancelled: { label: 'Cancelada', className: 'bg-red-100 text-red-700 border-red-200' },
 }
 
 export default function OrdersPage() {
@@ -62,8 +62,8 @@ export default function OrdersPage() {
             key: 'status',
             header: 'Estado',
             cell: (row: OrderRow) => {
-              const s = STATUS_LABELS[row.status]
-              return <Badge variant={s.variant}>{s.label}</Badge>
+              const s = STATUS_CONFIG[row.status]
+              return <Badge className={`border ${s.className}`}>{s.label}</Badge>
             },
           },
           {

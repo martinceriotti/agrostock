@@ -7,7 +7,6 @@ import {
   Settings,
   Warehouse,
   Package,
-  Users,
   ActivitySquare,
   BookOpen,
   Truck,
@@ -73,12 +72,6 @@ export const navItems = [
     label: 'Configuración',
     href: '/settings',
     icon: Settings,
-    roles: ['admin'],
-  },
-  {
-    label: 'Usuarios',
-    href: '/admin/users',
-    icon: Users,
     roles: ['admin'],
   },
   {
