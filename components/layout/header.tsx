@@ -9,12 +9,14 @@ import { Sidebar } from './sidebar'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { usePathname } from 'next/navigation'
+import { useQueryClient } from '@tanstack/react-query'
 import { navItems } from './nav-items'
 
 export function Header() {
   const [open, setOpen] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
+  const queryClient = useQueryClient()
 
   const currentPage = navItems.find(
     item => pathname === item.href || pathname.startsWith(item.href + '/')
@@ -23,6 +25,7 @@ export function Header() {
   async function handleLogout() {
     const supabase = createClient()
     await supabase.auth.signOut()
+    queryClient.clear()
     router.push('/login')
     router.refresh()
   }
