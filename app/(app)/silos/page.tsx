@@ -6,10 +6,10 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useSilos, useSiloAlerts, type Silo } from '@/lib/hooks/use-silos'
+import { useSilos, useSiloAlerts, useSiloReadings, type Silo } from '@/lib/hooks/use-silos'
 import {
   Database, Thermometer, Droplets, AlertTriangle, CheckCircle2,
-  WifiOff, MapPin, Wheat, Plus, ChevronRight
+  WifiOff, MapPin, Wheat, Plus, Clock
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -90,6 +90,8 @@ export default function SilosPage() {
 
 function SiloCard({ silo }: { silo: Silo }) {
   const { data: alerts = [] } = useSiloAlerts(silo.id)
+  const { data: readings = [] } = useSiloReadings(silo.id, 1)
+  const latest = readings[0] ?? null
   const hasAlerts = alerts.length > 0
 
   return (
@@ -131,11 +133,17 @@ function SiloCard({ silo }: { silo: Silo }) {
           )}
         </div>
 
-        {/* Placeholder lecturas — se llenará cuando haya sensores */}
-        <div className="flex gap-3 py-2 border-t border-gray-100">
-          <ReadingPlaceholder icon={Thermometer} label="Temp." unit="°C" />
-          <ReadingPlaceholder icon={Droplets} label="Hum." unit="%" />
+        {/* Última lectura IoT */}
+        <div className="flex gap-4 py-2 border-t border-gray-100">
+          <ReadingValue icon={Thermometer} value={latest?.temperature_c} unit="°C" alert={latest?.temperature_c != null && latest.temperature_c > 35} />
+          <ReadingValue icon={Droplets} value={latest?.humidity_pct} unit="%" alert={latest?.humidity_pct != null && latest.humidity_pct > 14} />
         </div>
+        {latest && (
+          <div className="flex items-center gap-1 text-xs text-gray-400 -mt-1">
+            <Clock className="h-3 w-3" />
+            {formatDistanceToNow(new Date(latest.recorded_at), { addSuffix: true, locale: es })}
+          </div>
+        )}
 
         {/* Alertas activas */}
         {hasAlerts && (
@@ -156,12 +164,16 @@ function SiloCard({ silo }: { silo: Silo }) {
   )
 }
 
-function ReadingPlaceholder({ icon: Icon, label, unit }: { icon: React.ElementType; label: string; unit: string }) {
+function ReadingValue({ icon: Icon, value, unit, alert }: {
+  icon: React.ElementType; value: number | null | undefined; unit: string; alert?: boolean
+}) {
+  const hasValue = value != null
   return (
-    <div className="flex items-center gap-1.5 text-gray-400">
+    <div className={`flex items-center gap-1.5 ${hasValue ? (alert ? 'text-red-600' : 'text-gray-700') : 'text-gray-400'}`}>
       <Icon className="h-3.5 w-3.5" />
-      <span className="text-xs">{label}</span>
-      <span className="text-xs font-medium text-gray-300">—{unit}</span>
+      <span className={`text-sm font-semibold ${!hasValue && 'text-gray-300'}`}>
+        {hasValue ? `${value!.toFixed(1)}${unit}` : `—${unit}`}
+      </span>
     </div>
   )
 }
