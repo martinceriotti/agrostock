@@ -277,9 +277,34 @@ Cada organización es completamente independiente. Los usuarios de una empresa *
 
 ## 12. Módulo Silos Bolsa (IoT)
 
-> **Estado:** Infraestructura lista. Interfaz de gestión completa en desarrollo.
-
 Este módulo permite monitorear en tiempo real las condiciones internas de cada silo bolsa mediante sensores IoT instalados a lo largo de la bolsa.
+
+### Crear un nuevo silo
+
+**Quién lo hace:** Admin
+
+1. Ir a **Silos Bolsa** en el menú lateral.
+2. Hacer clic en **Nuevo Silo**.
+3. Completar los datos:
+   - **Nombre** (obligatorio): ej. "Bolsa 1 - Lote Norte"
+   - **Campo / lote**: nombre del campo donde está instalado
+   - **Cultivo**: ej. Soja, Maíz
+   - **Capacidad (ton)**: capacidad de la bolsa en toneladas
+   - **Fecha de llenado**: cuándo se llenó la bolsa
+   - **Estado**: Activo / Vacío / Cerrado
+   - **Notas**: observaciones opcionales
+4. Hacer clic en **Crear silo**.
+5. Se mostrará la **API key** generada automáticamente. Copiarla antes de cerrar — es necesaria para configurar el gateway IoT.
+
+> **Nota:** La API key también puede consultarse después haciendo clic en "Ver API key" en la tarjeta del silo.
+
+### Tarjetas de silo
+
+Cada silo muestra:
+- Estado (Activo / Vacío / Cerrado)
+- Última lectura de temperatura y humedad con timestamp
+- Alertas activas (si las hay, el borde de la tarjeta se vuelve rojo)
+- API key (ocultada por defecto, click en "Ver API key" para revelarla)
 
 ### Variables monitoreadas
 

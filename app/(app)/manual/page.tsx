@@ -181,12 +181,28 @@ export default function ManualPage() {
         </Section>
 
         <Section title="12. Módulo Silos Bolsa (IoT)">
-          <div className="mb-3 bg-amber-50 border border-amber-200 rounded-md px-4 py-2.5 text-sm text-amber-800">
-            <strong>Estado:</strong> Infraestructura lista. Interfaz de gestión completa en desarrollo.
-          </div>
           <p className="text-sm text-gray-700 mb-4">
             Monitoreo en tiempo real de temperatura, humedad y CO₂ dentro de cada silo bolsa mediante sensores IoT
             instalados a lo largo de la bolsa.
+          </p>
+
+          <h4 className="font-semibold text-gray-800 mb-2">Crear un nuevo silo</h4>
+          <p className="text-sm text-gray-500 mb-2">Quién lo hace: <strong>Admin</strong></p>
+          <ol className="list-decimal list-inside text-sm text-gray-700 mb-3 space-y-1">
+            <li>Ir a <strong>Silos Bolsa</strong> en el menú lateral.</li>
+            <li>Hacer clic en <strong>Nuevo Silo</strong>.</li>
+            <li>Completar: nombre (obligatorio), campo/lote, cultivo, capacidad, fecha de llenado, estado y notas.</li>
+            <li>Hacer clic en <strong>Crear silo</strong>.</li>
+            <li>Se mostrará la <strong>API key</strong> generada. Copiarla antes de cerrar — es necesaria para configurar el gateway.</li>
+          </ol>
+          <Note>
+            La API key también puede consultarse después haciendo clic en <strong>&quot;Ver API key&quot;</strong> en la tarjeta del silo.
+          </Note>
+
+          <h4 className="font-semibold text-gray-800 mb-2 mt-4">Tarjetas de silo</h4>
+          <p className="text-sm text-gray-700 mb-4">
+            Cada tarjeta muestra el estado del silo, la última lectura de temperatura y humedad con timestamp,
+            las alertas activas (borde rojo si hay alguna) y un botón para revelar la API key.
           </p>
 
           <h4 className="font-semibold text-gray-800 mb-2">Variables monitoreadas</h4>

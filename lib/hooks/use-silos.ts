@@ -134,17 +134,25 @@ export function useCreateSilo() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (values: Omit<Silo, 'id' | 'organization_id' | 'api_key' | 'created_at'>) => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('No autenticado')
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('id', user.id)
+        .single()
+      if (!profile?.organization_id) throw new Error('Sin organización asignada')
+
       const { data, error } = await supabase
         .from('silos')
-        .insert(values)
+        .insert({ ...values, organization_id: profile.organization_id })
         .select()
         .single()
       if (error) throw error
-      return data
+      return data as unknown as Silo
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['silos'] })
-      toast.success('Silo creado correctamente')
     },
     onError: (e: Error) => toast.error(e.message),
   })
