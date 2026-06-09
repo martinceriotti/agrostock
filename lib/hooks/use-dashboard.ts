@@ -184,6 +184,6 @@ export function useDashboardData() {
         }>,
       }
     },
-    staleTime: 2 * 60 * 1000,
+    refetchInterval: 60_000,
   })
 }
