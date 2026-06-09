@@ -474,13 +474,13 @@ const RESET_MODES: { value: ResetMode; label: string; deletes: string; keeps: st
   {
     value: 'transactions',
     label: 'Solo transacciones',
-    deletes: 'Órdenes de compra, aplicaciones en campo, movimientos de stock, silos IoT y actividad.',
-    keeps: 'Productos, depósitos, categorías, proveedores, usuarios y organización.',
+    deletes: 'Órdenes de compra, aplicaciones en campo, movimientos de stock, lecturas y alertas de silos IoT, actividad.',
+    keeps: 'Silos, sensores, umbrales de alerta, productos, depósitos, categorías, proveedores, usuarios y organización.',
   },
   {
     value: 'full',
     label: 'Reseteo completo',
-    deletes: 'Todo lo anterior más productos, depósitos, categorías y proveedores.',
+    deletes: 'Todo lo anterior más silos, sensores, productos, depósitos, categorías y proveedores.',
     keeps: 'Únicamente usuarios y organización.',
   },
 ]

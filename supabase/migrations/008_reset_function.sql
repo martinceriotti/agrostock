@@ -1,7 +1,8 @@
 -- Función para resetear datos de una organización.
 -- Llamada desde un server action con service_role (SECURITY DEFINER).
--- mode = 'transactions' → borra solo datos operativos, mantiene config (productos, depósitos, etc.)
--- mode = 'full'         → borra también configuración, deja solo org + usuarios
+-- mode = 'transactions' → borra datos operativos. Mantiene config (productos, depósitos, silos,
+--                         sensores, umbrales de alerta).
+-- mode = 'full'         → borra también configuración (silos incluidos), deja solo org + usuarios
 
 CREATE OR REPLACE FUNCTION public.reset_organization_data(org_id UUID, mode TEXT)
 RETURNS JSONB
@@ -18,18 +19,12 @@ BEGIN
     RAISE EXCEPTION 'Organización no encontrada';
   END IF;
 
-  -- ── IoT: silos (cascada borra sensors/readings/alerts/configs) ──
-  DELETE FROM silo_readings      WHERE organization_id = org_id;
+  -- ── IoT: solo lecturas y alertas (silos/sensores/umbrales se conservan) ──
+  DELETE FROM silo_readings WHERE organization_id = org_id;
   GET DIAGNOSTICS n = ROW_COUNT; counts := counts || jsonb_build_object('silo_readings', n);
 
-  DELETE FROM silo_alerts        WHERE organization_id = org_id;
+  DELETE FROM silo_alerts   WHERE organization_id = org_id;
   GET DIAGNOSTICS n = ROW_COUNT; counts := counts || jsonb_build_object('silo_alerts', n);
-
-  DELETE FROM silo_alert_configs WHERE organization_id = org_id;
-  DELETE FROM silo_sensors       WHERE organization_id = org_id;
-
-  DELETE FROM silos              WHERE organization_id = org_id;
-  GET DIAGNOSTICS n = ROW_COUNT; counts := counts || jsonb_build_object('silos', n);
 
   -- ── Movimientos de stock ─────────────────────────────────────────
   DELETE FROM stock_movements    WHERE organization_id = org_id;
@@ -49,6 +44,12 @@ BEGIN
 
   -- ── Configuración (solo si mode = 'full') ────────────────────────
   IF mode = 'full' THEN
+    -- Silos completos (CASCADE borra sensors/alert_configs)
+    DELETE FROM silo_alert_configs WHERE organization_id = org_id;
+    DELETE FROM silo_sensors       WHERE organization_id = org_id;
+    DELETE FROM silos              WHERE organization_id = org_id;
+    GET DIAGNOSTICS n = ROW_COUNT; counts := counts || jsonb_build_object('silos', n);
+
     DELETE FROM products           WHERE organization_id = org_id;
     GET DIAGNOSTICS n = ROW_COUNT; counts := counts || jsonb_build_object('products', n);
 
