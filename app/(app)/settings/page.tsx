@@ -19,7 +19,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { productCategorySchema, supplierSchema, type ProductCategoryFormData, type SupplierFormData } from '@/lib/validations'
-import { Plus, Loader2, Pencil, Trash2, UserCheck, Mail, KeyRound } from 'lucide-react'
+import { Plus, Loader2, Pencil, Trash2, UserCheck, Mail, KeyRound, AlertTriangle, CheckCircle2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -27,6 +27,7 @@ import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import type { Supplier } from '@/lib/types/database.types'
 import { getOrgUsers, inviteUser, updateUserRole, updateUserName, deleteUser, sendPasswordReset } from '@/app/actions/admin'
+import { resetOrganizationData, type ResetMode } from '@/app/actions/reset'
 
 // ─── Users tab ──────────────────────────────────────────────────────
 
@@ -467,6 +468,134 @@ function SuppliersTab() {
   )
 }
 
+// ─── Advanced tab ────────────────────────────────────────────────────
+
+const RESET_MODES: { value: ResetMode; label: string; deletes: string; keeps: string }[] = [
+  {
+    value: 'transactions',
+    label: 'Solo transacciones',
+    deletes: 'Órdenes de compra, aplicaciones en campo, movimientos de stock, silos IoT y actividad.',
+    keeps: 'Productos, depósitos, categorías, proveedores, usuarios y organización.',
+  },
+  {
+    value: 'full',
+    label: 'Reseteo completo',
+    deletes: 'Todo lo anterior más productos, depósitos, categorías y proveedores.',
+    keeps: 'Únicamente usuarios y organización.',
+  },
+]
+
+function AdvancedTab() {
+  const [mode, setMode] = useState<ResetMode>('transactions')
+  const [phrase, setPhrase] = useState('')
+  const [isPending, startTransition] = useTransition()
+  const [result, setResult] = useState<{ ok: boolean; msg: string } | null>(null)
+
+  const confirmed = phrase === 'BORRAR TODO'
+
+  function handleReset() {
+    if (!confirmed) return
+    startTransition(async () => {
+      setResult(null)
+      const res = await resetOrganizationData(mode, phrase)
+      if (res.success) {
+        const total = Object.values(res.counts).reduce((s, n) => s + n, 0)
+        setResult({ ok: true, msg: `${total} registros eliminados correctamente.` })
+        setPhrase('')
+      } else {
+        setResult({ ok: false, msg: res.error })
+      }
+    })
+  }
+
+  return (
+    <div className="max-w-2xl space-y-6">
+      {/* Zona de peligro */}
+      <div className="rounded-xl border-2 border-red-200 bg-red-50">
+        <div className="flex items-center gap-3 px-5 py-4 border-b border-red-200">
+          <AlertTriangle className="h-5 w-5 text-red-600 shrink-0" />
+          <div>
+            <p className="font-semibold text-red-800">Zona de peligro</p>
+            <p className="text-sm text-red-600">Estas acciones son permanentes e irreversibles.</p>
+          </div>
+        </div>
+
+        <div className="px-5 py-5 space-y-5">
+          {/* Selector de modo */}
+          <div className="space-y-3">
+            <p className="text-sm font-medium text-gray-700">¿Qué querés borrar?</p>
+            {RESET_MODES.map(m => (
+              <label
+                key={m.value}
+                className={`flex items-start gap-3 p-4 rounded-lg border-2 cursor-pointer transition-colors ${
+                  mode === m.value
+                    ? 'border-red-400 bg-white'
+                    : 'border-gray-200 bg-white hover:border-gray-300'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="reset-mode"
+                  value={m.value}
+                  checked={mode === m.value}
+                  onChange={() => setMode(m.value)}
+                  className="mt-0.5 accent-red-600"
+                />
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-gray-900">{m.label}</p>
+                  <p className="text-xs text-red-700"><span className="font-medium">Borra:</span> {m.deletes}</p>
+                  <p className="text-xs text-gray-500"><span className="font-medium">Conserva:</span> {m.keeps}</p>
+                </div>
+              </label>
+            ))}
+          </div>
+
+          {/* Confirmación */}
+          <div className="space-y-2 pt-2 border-t border-red-200">
+            <p className="text-sm text-gray-700">
+              Para confirmar, escribí exactamente: <span className="font-mono font-bold text-red-700">BORRAR TODO</span>
+            </p>
+            <input
+              type="text"
+              value={phrase}
+              onChange={e => { setPhrase(e.target.value); setResult(null) }}
+              placeholder="BORRAR TODO"
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-red-400"
+            />
+          </div>
+
+          {/* Resultado */}
+          {result && (
+            <div className={`flex items-center gap-2 rounded-lg px-4 py-3 text-sm ${
+              result.ok
+                ? 'bg-green-50 text-green-800 border border-green-200'
+                : 'bg-red-100 text-red-800 border border-red-200'
+            }`}>
+              {result.ok
+                ? <CheckCircle2 className="h-4 w-4 shrink-0" />
+                : <AlertTriangle className="h-4 w-4 shrink-0" />}
+              {result.msg}
+            </div>
+          )}
+
+          {/* Botón */}
+          <button
+            onClick={handleReset}
+            disabled={!confirmed || isPending}
+            className="flex items-center gap-2 rounded-md bg-red-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors
+              hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {isPending
+              ? <Loader2 className="h-4 w-4 animate-spin" />
+              : <Trash2 className="h-4 w-4" />}
+            {isPending ? 'Borrando...' : 'Confirmar y borrar datos'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Main page ───────────────────────────────────────────────────────
 
 export default function SettingsPage() {
@@ -481,10 +610,14 @@ export default function SettingsPage() {
           <TabsTrigger value="users">Usuarios</TabsTrigger>
           <TabsTrigger value="categories">Categorías</TabsTrigger>
           <TabsTrigger value="suppliers">Proveedores</TabsTrigger>
+          <TabsTrigger value="advanced" className="text-red-600 data-[selected]:text-red-700">
+            Avanzado
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="users"><UsersTab /></TabsContent>
         <TabsContent value="categories"><CategoriesTab /></TabsContent>
         <TabsContent value="suppliers"><SuppliersTab /></TabsContent>
+        <TabsContent value="advanced"><AdvancedTab /></TabsContent>
       </Tabs>
     </div>
   )
