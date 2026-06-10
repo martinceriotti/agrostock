@@ -92,7 +92,7 @@ export async function inviteUser(data: {
 
     const { data: invited, error } = await admin.auth.admin.inviteUserByEmail(data.email, {
       data: { full_name: data.full_name, role: data.role, organization_id: orgId },
-      redirectTo: `${siteUrl}/auth/callback`,
+      redirectTo: `${siteUrl}/auth/callback?next=/auth/set-password`,
     })
     if (error) return { success: false, error: error.message }
 
@@ -171,15 +171,39 @@ export async function deleteUser(userId: string): Promise<ActionResult> {
   }
 }
 
-// ── Restablecer contraseña ────────────────────────────────────────
+// ── Restablecer contraseña (envía email al usuario) ───────────────
 export async function sendPasswordReset(email: string): Promise<ActionResult> {
   try {
     await requireAdmin()
-    const admin = getAdminClient()
-    const { error } = await admin.auth.admin.generateLink({
-      type: 'recovery',
-      email,
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL
+      ?? (process.env.VERCEL_PROJECT_PRODUCTION_URL
+        ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+        : 'http://localhost:3000')
+    const supabase = await createClient()
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${siteUrl}/auth/callback?next=/auth/set-password`,
     })
+    if (error) return { success: false, error: error.message }
+    return { success: true }
+  } catch (e) {
+    return { success: false, error: (e as Error).message }
+  }
+}
+
+// ── Setear contraseña temporal (admin) ───────────────────────────
+export async function setUserPassword(userId: string, password: string): Promise<ActionResult> {
+  try {
+    const { orgId } = await requireAdmin()
+    const supabase = await createClient()
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', userId)
+      .eq('organization_id', orgId)
+      .single()
+    if (!profile) return { success: false, error: 'Usuario no encontrado en la organización' }
+    const admin = getAdminClient()
+    const { error } = await admin.auth.admin.updateUserById(userId, { password })
     if (error) return { success: false, error: error.message }
     return { success: true }
   } catch (e) {

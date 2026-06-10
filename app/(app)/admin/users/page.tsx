@@ -13,7 +13,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { getOrgUsers, inviteUser, updateUserRole, updateUserName, deleteUser, sendPasswordReset } from '@/app/actions/admin'
+import { getOrgUsers, inviteUser, updateUserRole, updateUserName, deleteUser, sendPasswordReset, setUserPassword } from '@/app/actions/admin'
 import { toast } from 'sonner'
 import { Plus, Pencil, Trash2, Loader2, UserCheck, Mail, KeyRound } from 'lucide-react'
 import { format } from 'date-fns'
@@ -42,6 +42,8 @@ export default function AdminUsersPage() {
   const [editUser, setEditUser] = useState<OrgUser | null>(null)
   const [editName, setEditName] = useState('')
   const [editRole, setEditRole] = useState<'admin' | 'manager' | 'engineer'>('engineer')
+  const [passwordUser, setPasswordUser] = useState<OrgUser | null>(null)
+  const [tempPassword, setTempPassword] = useState('')
 
   const { data: result, isLoading } = useQuery({
     queryKey: ['admin-users'],
@@ -100,11 +102,23 @@ export default function AdminUsersPage() {
   }
 
   function handlePasswordReset(user: OrgUser) {
-    if (!confirm(`¿Enviar email de restablecimiento de contraseña a ${user.email}?`)) return
     startTransition(async () => {
       const result = await sendPasswordReset(user.email)
       if (!result.success) { toast.error(result.error); return }
       toast.success(`Email de restablecimiento enviado a ${user.email}`)
+      setPasswordUser(null)
+    })
+  }
+
+  function handleSetTempPassword() {
+    if (!passwordUser) return
+    if (tempPassword.length < 8) { toast.error('Mínimo 8 caracteres'); return }
+    startTransition(async () => {
+      const result = await setUserPassword(passwordUser.id, tempPassword)
+      if (!result.success) { toast.error(result.error); return }
+      toast.success(`Contraseña actualizada para ${passwordUser.full_name}`)
+      setPasswordUser(null)
+      setTempPassword('')
     })
   }
 
@@ -167,9 +181,8 @@ export default function AdminUsersPage() {
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8 text-gray-500 hover:text-blue-600 hover:bg-blue-50"
-                      onClick={() => handlePasswordReset(user)}
-                      disabled={isPending}
-                      title="Restablecer contraseña"
+                      onClick={() => { setPasswordUser(user); setTempPassword('') }}
+                      title="Gestionar contraseña"
                     >
                       <KeyRound className="h-3.5 w-3.5" />
                     </Button>
@@ -246,6 +259,59 @@ export default function AdminUsersPage() {
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: Gestionar contraseña */}
+      <Dialog open={!!passwordUser} onOpenChange={(open) => { if (!open) { setPasswordUser(null); setTempPassword('') } }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Contraseña — {passwordUser?.full_name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-5 mt-2">
+            {/* Opción 1: email de reset */}
+            <div className="space-y-2">
+              <p className="text-sm text-gray-600">
+                Enviá un email para que el usuario configure su propia contraseña.
+              </p>
+              <Button
+                variant="outline"
+                className="w-full gap-2"
+                disabled={isPending}
+                onClick={() => passwordUser && handlePasswordReset(passwordUser)}
+              >
+                {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                Enviar email de restablecimiento
+              </Button>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="flex-1 border-t" />
+              <span className="text-xs text-gray-400">o</span>
+              <div className="flex-1 border-t" />
+            </div>
+
+            {/* Opción 2: contraseña temporal */}
+            <div className="space-y-2">
+              <p className="text-sm text-gray-600">
+                Seteá una contraseña temporal para que pueda ingresar ahora.
+              </p>
+              <Input
+                type="text"
+                placeholder="Contraseña temporal (mín. 8 caracteres)"
+                value={tempPassword}
+                onChange={e => setTempPassword(e.target.value)}
+              />
+              <Button
+                className="w-full bg-green-700 hover:bg-green-800 gap-2"
+                disabled={isPending || tempPassword.length < 8}
+                onClick={handleSetTempPassword}
+              >
+                {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
+                Setear contraseña temporal
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 
