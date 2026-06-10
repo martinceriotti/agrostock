@@ -11,8 +11,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { useCurrentStock } from '@/lib/hooks/use-stock'
-import { useTransferStock } from '@/lib/hooks/use-stock'
+import { useCurrentStock, useTransferStock } from '@/lib/hooks/use-stock'
+import { useWarehouses } from '@/lib/hooks/use-products'
 import { useUser } from '@/lib/hooks/use-user'
 import { ArrowRight, Loader2, PackageCheck } from 'lucide-react'
 
@@ -29,6 +29,7 @@ export default function TransferPage() {
   const router = useRouter()
   const { data: user } = useUser()
   const { data: stockData = [] } = useCurrentStock()
+  const { data: allWarehouses = [] } = useWarehouses()
   const transfer = useTransferStock()
 
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null)
@@ -63,16 +64,11 @@ export default function TransferPage() {
 
   // Todos los depósitos excepto el origen seleccionado
   const destWarehouses = useMemo(() => {
-    const all = new Map<string, string>()
-    stockData.forEach(e => {
-      const w = e.warehouses as { id: string; name: string } | null
-      if (w) all.set(w.id, w.name)
-    })
-    return [...all.entries()]
-      .filter(([id]) => id !== selectedFrom)
-      .map(([id, name]) => ({ id, name }))
+    return allWarehouses
+      .filter(w => w.id !== selectedFrom)
+      .map(w => ({ id: w.id, name: w.name }))
       .sort((a, b) => a.name.localeCompare(b.name))
-  }, [stockData, selectedFrom])
+  }, [allWarehouses, selectedFrom])
 
   const availableQty = useMemo(() => {
     if (!selectedProduct || !selectedFrom) return null
