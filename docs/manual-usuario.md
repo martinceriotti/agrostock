@@ -9,7 +9,7 @@
 5. [Flujo: Orden de aplicación en campo](#5-flujo-orden-de-aplicación-en-campo)
 6. [Flujo: Ejecución de una aplicación](#6-flujo-ejecución-de-una-aplicación)
 7. [Flujo: Transferencia entre depósitos](#7-flujo-transferencia-entre-depósitos)
-8. [Stock y movimientos](#8-stock-y-movimientos)
+8. [Stock, movimientos y detalle de producto](#8-stock-movimientos-y-detalle-de-producto)
 9. [Administración de usuarios](#9-administración-de-usuarios)
 10. [Control de actividad](#10-control-de-actividad)
 11. [Alta de un nuevo tenant (administrador del sistema)](#11-alta-de-un-nuevo-tenant-administrador-del-sistema)
@@ -31,7 +31,9 @@ Si olvidó su contraseña, utilice el link "¿Olvidaste tu contraseña?" en la p
 | Acción | Ingeniero | Manager | Admin |
 |--------|:---------:|:-------:|:-----:|
 | Ver stock, movimientos, productos | ✓ | ✓ | ✓ |
+| Ver detalle de precios de un producto | ✓ | ✓ | ✓ |
 | Crear órdenes de aplicación | ✓ | ✓ | ✓ |
+| Enviar aplicación propia para aprobación | ✓ | ✓ | ✓ |
 | Ejecutar aplicaciones (descuenta stock) | — | ✓ | ✓ |
 | Transferir stock entre depósitos | — | ✓ | ✓ |
 | Crear y recibir órdenes de compra | — | ✓ | ✓ |
@@ -58,9 +60,14 @@ Si olvidó su contraseña, utilice el link "¿Olvidaste tu contraseña?" en la p
    - Seleccionar el producto del catálogo.
    - Seleccionar el **depósito de destino** (dónde se almacenará al llegar).
    - Ingresar la **cantidad pedida** y el **precio unitario**.
+   - Completar **Lote** (opcional, ej.: `L240510`) y **Fecha de vencimiento** (opcional) para trazabilidad.
 5. Hacer clic en **Crear Orden**.
 
 La orden queda en estado **Pendiente** hasta que la mercadería llegue.
+
+> **Nota:** Si se cargó lote o fecha de vencimiento, se muestran en el detalle de la orden. Los ítems con vencimiento próximo (< 30 días) o ya vencidos se marcan con un ícono de alerta.
+
+> **Restricción:** El rol Ingeniero no puede crear órdenes de compra. Esta acción es exclusiva de Manager y Admin.
 
 ---
 
@@ -100,6 +107,16 @@ El sistema registra automáticamente los movimientos de stock (entradas) en el d
 
 La orden se guarda en estado **Borrador**. El stock **no se descuenta todavía**.
 
+### Flujo del Ingeniero: enviar para aprobación
+
+El Ingeniero puede crear órdenes de aplicación, pero no ejecutarlas. Para notificar que la aplicación está lista:
+
+1. Abrir la orden en estado **Borrador**.
+2. Hacer clic en **Enviar para aprobación**.
+3. La orden pasa a estado **Pendiente aprobación** (visible como "Enviada" para Manager/Admin).
+
+Un Manager o Admin luego verifica y ejecuta la orden (ver sección 6).
+
 ---
 
 ## 6. Flujo: Ejecución de una aplicación
@@ -138,13 +155,28 @@ Los movimientos quedan registrados en el historial con tipo **Transferencia** y 
 
 ---
 
-## 8. Stock y movimientos
+## 8. Stock, movimientos y detalle de producto
 
 ### Vista de Stock
 
 Muestra el **stock actual por producto y depósito**, calculado como la suma de todos los movimientos históricos.  
 Los filtros disponibles son: depósito, categoría y búsqueda por nombre.  
 Los productos con stock por debajo del mínimo configurado se marcan con una alerta visual.
+
+Hacer clic en cualquier tarjeta o fila de la vista de stock navega al **detalle del producto**.
+
+### Detalle de producto — Análisis de precios
+
+**Quién lo usa:** Todos los roles
+
+Al hacer clic en un producto en la vista de stock, se abre una página con:
+
+1. **Estadísticas de precio en USD** — último precio, promedio, mínimo y máximo histórico.
+2. **Gráfico de evolución** — línea de precio USD en el tiempo, diferenciada por proveedor.
+3. **Historial de compras** — tabla con fecha, N° de OC, proveedor, cantidad, precio original, precio en USD y lote.
+4. **Proveedores asociados** — lista de proveedores con fecha de primera y última compra.
+
+> **Nota:** Los precios en ARS se convierten a USD usando el tipo de cambio registrado en cada orden de compra. Si una orden no tiene tipo de cambio cargado, ese ítem aparece como "—" en la columna USD.
 
 ### Movimientos
 

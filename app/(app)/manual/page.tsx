@@ -46,8 +46,11 @@ export default function ManualPage() {
             <tbody>
               {[
                 ['Ver stock, movimientos, productos', true, true, true],
+                ['Ver detalle de precios de un producto', true, true, true],
                 ['Crear órdenes de aplicación', true, true, true],
+                ['Enviar aplicación propia para aprobación', true, true, true],
                 ['Ejecutar aplicaciones (descuenta stock)', false, true, true],
+                ['Transferir stock entre depósitos', false, true, true],
                 ['Crear y recibir órdenes de compra', false, true, true],
                 ['Administrar productos y depósitos', false, true, true],
                 ['Configuración general', false, false, true],
@@ -73,10 +76,14 @@ export default function ManualPage() {
             'En el menú lateral, ir a Órdenes de Compra.',
             'Hacer clic en Nueva Orden.',
             'Completar proveedor, moneda, tipo de cambio, fechas y notas.',
-            'Agregar los productos con + Agregar ítem: seleccionar producto, depósito de destino, cantidad y precio unitario.',
+            'Agregar los productos con + Agregar ítem: seleccionar producto, depósito de destino, cantidad y precio unitario. Opcionalmente completar Lote (ej.: L240510) y Fecha de vencimiento para trazabilidad.',
             'Hacer clic en Crear Orden.',
           ]} />
-          <Note>La orden queda en estado Pendiente hasta que la mercadería llegue.</Note>
+          <Note>
+            La orden queda en estado Pendiente hasta que la mercadería llegue. Los ítems con vencimiento próximo
+            (&lt; 30 días) o ya vencidos se marcan con un ícono de alerta en el detalle de la orden.
+          </Note>
+          <Note>El rol Ingeniero no puede crear órdenes de compra.</Note>
         </Section>
 
         <Section title="4. Recepción de mercadería">
@@ -103,6 +110,15 @@ export default function ManualPage() {
             'Hacer clic en Crear Orden.',
           ]} />
           <Note>La orden se guarda en estado Borrador. El stock <strong>no se descuenta todavía</strong>.</Note>
+          <h4 className="font-semibold text-gray-800 mt-4 mb-1">Flujo del Ingeniero: enviar para aprobación</h4>
+          <p className="text-sm text-gray-700 mb-2">
+            El Ingeniero puede crear órdenes pero no ejecutarlas. Para notificar que está lista:
+          </p>
+          <Steps steps={[
+            'Abrir la orden en estado Borrador.',
+            'Hacer clic en Enviar para aprobación.',
+            'La orden pasa a estado Pendiente aprobación. Un Manager o Admin la ejecuta.',
+          ]} />
         </Section>
 
         <Section title="6. Ejecución de una aplicación">
@@ -139,11 +155,29 @@ export default function ManualPage() {
           <Note>Los movimientos quedan en el historial con tipo Transferencia.</Note>
         </Section>
 
-        <Section title="8. Stock y movimientos">
+        <Section title="8. Stock, movimientos y detalle de producto">
           <h4 className="font-semibold text-gray-800 mt-3 mb-1">Vista de Stock</h4>
           <p className="text-sm text-gray-700">
             Muestra el stock actual por producto y depósito. Los productos por debajo del mínimo se marcan con alerta visual.
+            Hacer clic en cualquier tarjeta o fila abre el <strong>detalle del producto</strong>.
           </p>
+
+          <h4 className="font-semibold text-gray-800 mt-4 mb-2">Detalle de producto — Análisis de precios</h4>
+          <p className="text-xs text-gray-500 mb-2">Quién lo usa: todos los roles</p>
+          <p className="text-sm text-gray-700 mb-2">
+            Al hacer clic en un producto se abre una página con:
+          </p>
+          <ul className="list-disc list-inside text-sm text-gray-700 space-y-1 mb-3">
+            <li><strong>Estadísticas en USD</strong> — último precio, promedio, mínimo y máximo histórico.</li>
+            <li><strong>Gráfico de evolución</strong> — precio USD en el tiempo, diferenciado por proveedor.</li>
+            <li><strong>Historial de compras</strong> — fecha, N° OC, proveedor, cantidad, precio original, precio USD y lote.</li>
+            <li><strong>Proveedores asociados</strong> — lista con fecha de primera y última compra.</li>
+          </ul>
+          <Note>
+            Los precios en ARS se convierten a USD usando el tipo de cambio de cada orden. Si una orden no tiene tipo
+            de cambio, ese ítem muestra &quot;—&quot; en la columna USD.
+          </Note>
+
           <h4 className="font-semibold text-gray-800 mt-4 mb-1">Movimientos</h4>
           <p className="text-sm text-gray-700">
             Registro completo de entradas, salidas y transferencias. Muestra tipo, producto, depósito, cantidad, usuario y fecha.
