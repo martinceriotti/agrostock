@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -11,9 +11,31 @@ import { toast } from 'sonner'
 
 export default function SetPasswordPage() {
   const router = useRouter()
+  const [ready, setReady] = useState(false)
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    const supabase = createClient()
+
+    // Caso A: sesión ya activa (viene del callback PKCE tras reset password)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) { setReady(true); return }
+
+      // Caso B: viene del link de invitación (implicit flow con hash tokens)
+      // El cliente detecta los tokens del hash y dispara SIGNED_IN
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_IN' && session) {
+          setReady(true)
+          subscription.unsubscribe()
+        } else if (event === 'INITIAL_SESSION' && !session) {
+          router.replace('/login?error=El+link+expiró.+Pedí+uno+nuevo+al+administrador.')
+          subscription.unsubscribe()
+        }
+      })
+    })
+  }, [router])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -49,39 +71,48 @@ export default function SetPasswordPage() {
         </div>
 
         <div className="bg-white rounded-2xl shadow-xl p-8">
-          <h2 className="text-xl font-semibold text-gray-800 mb-1">Crear contraseña</h2>
-          <p className="text-sm text-gray-500 mb-6">Elegí una contraseña para acceder a tu cuenta.</p>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1.5">
-              <Label>Nueva contraseña</Label>
-              <Input
-                type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="Mínimo 8 caracteres"
-                autoFocus
-                required
-              />
+          {!ready ? (
+            <div className="flex flex-col items-center gap-3 py-4 text-gray-500">
+              <Loader2 className="h-6 w-6 animate-spin text-green-700" />
+              <p className="text-sm">Verificando enlace...</p>
             </div>
-            <div className="space-y-1.5">
-              <Label>Confirmar contraseña</Label>
-              <Input
-                type="password"
-                value={confirm}
-                onChange={e => setConfirm(e.target.value)}
-                placeholder="Repetí la contraseña"
-                required
-              />
-            </div>
-            <Button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-green-700 hover:bg-green-800 gap-2"
-            >
-              {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-              Guardar contraseña
-            </Button>
-          </form>
+          ) : (
+            <>
+              <h2 className="text-xl font-semibold text-gray-800 mb-1">Crear contraseña</h2>
+              <p className="text-sm text-gray-500 mb-6">Elegí una contraseña para acceder a tu cuenta.</p>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label>Nueva contraseña</Label>
+                  <Input
+                    type="password"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    placeholder="Mínimo 8 caracteres"
+                    autoFocus
+                    required
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Confirmar contraseña</Label>
+                  <Input
+                    type="password"
+                    value={confirm}
+                    onChange={e => setConfirm(e.target.value)}
+                    placeholder="Repetí la contraseña"
+                    required
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-green-700 hover:bg-green-800 gap-2"
+                >
+                  {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+                  Guardar contraseña
+                </Button>
+              </form>
+            </>
+          )}
         </div>
       </div>
     </div>

@@ -92,7 +92,7 @@ export async function inviteUser(data: {
 
     const { data: invited, error } = await admin.auth.admin.inviteUserByEmail(data.email, {
       data: { full_name: data.full_name, role: data.role, organization_id: orgId },
-      redirectTo: `${siteUrl}/auth/callback?next=/auth/set-password`,
+      redirectTo: `${siteUrl}/auth/set-password`,
     })
     if (error) return { success: false, error: error.message }
 
