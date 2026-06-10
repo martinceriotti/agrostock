@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { useOrder, useReceiveOrder, useCancelOrder } from '@/lib/hooks/use-orders'
 import { useUser } from '@/lib/hooks/use-user'
-import { ArrowLeft, PackageCheck, X, Loader2 } from 'lucide-react'
+import { ArrowLeft, PackageCheck, X, Loader2, AlertTriangle } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { buttonVariants } from '@/components/ui/button'
@@ -41,6 +41,8 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     quantity_received: number
     unit_price: number | null
     currency: string
+    lote: string | null
+    fecha_vencimiento: string | null
     products: { id: string; name: string; unit: string } | null
     warehouses: { id: string; name: string } | null
   }>) ?? []
@@ -159,11 +161,30 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           <div className="divide-y">
             {items.map((item) => {
               const pending = item.quantity_ordered - item.quantity_received
+              const today = new Date()
+              const expiry = item.fecha_vencimiento ? new Date(item.fecha_vencimiento) : null
+              const isExpired = expiry && expiry < today
+              const isExpiringSoon = expiry && !isExpired && expiry < new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000)
               return (
                 <div key={item.id} className="py-3 grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
                   <div className="col-span-2">
                     <p className="font-medium">{item.products?.name}</p>
                     <p className="text-gray-500">{item.warehouses?.name}</p>
+                    {item.lote && (
+                      <p className="text-xs text-gray-500 mt-0.5">Lote: <span className="font-mono">{item.lote}</span></p>
+                    )}
+                    {expiry && (
+                      <div className="flex items-center gap-1 mt-0.5">
+                        {(isExpired || isExpiringSoon) && (
+                          <AlertTriangle className={`h-3 w-3 ${isExpired ? 'text-red-500' : 'text-amber-500'}`} />
+                        )}
+                        <p className={`text-xs ${isExpired ? 'text-red-600 font-medium' : isExpiringSoon ? 'text-amber-600' : 'text-gray-500'}`}>
+                          Vence: {format(expiry, 'dd MMM yyyy', { locale: es })}
+                          {isExpired && ' — Vencido'}
+                          {isExpiringSoon && ' — Próximo a vencer'}
+                        </p>
+                      </div>
+                    )}
                   </div>
                   <div>
                     <p className="text-gray-500">Pedido / Recibido</p>

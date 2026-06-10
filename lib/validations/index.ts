@@ -42,6 +42,8 @@ export const purchaseOrderItemSchema = z.object({
   quantity_ordered: z.number().positive('La cantidad debe ser mayor a 0'),
   unit_price: z.number().min(0).optional().nullable(),
   currency: z.enum(['ARS', 'USD']),
+  lote: z.string().optional(),
+  fecha_vencimiento: z.string().optional().nullable(),
 })
 
 export const purchaseOrderSchema = z.object({

@@ -11,6 +11,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useCurrentStock } from '@/lib/hooks/use-stock'
 import { useWarehouses, useCategories } from '@/lib/hooks/use-products'
+import { useUser } from '@/lib/hooks/use-user'
 import { AlertTriangle, Package2, Search, LayoutGrid, List, Truck } from 'lucide-react'
 
 type StockItem = {
@@ -25,9 +26,11 @@ type StockItem = {
 
 export default function StockPage() {
   const router = useRouter()
+  const { data: user } = useUser()
   const { data: stockData = [], isLoading } = useCurrentStock()
   const { data: warehouses = [] } = useWarehouses()
   const { data: categories = [] } = useCategories()
+  const canManage = user?.role === 'admin' || user?.role === 'manager'
 
   const [search, setSearch] = useState('')
   const [warehouseFilter, setWarehouseFilter] = useState('all')
@@ -97,10 +100,12 @@ export default function StockPage() {
         title="Stock Actual"
         description="Inventario en tiempo real por depósito y producto"
         action={
-          <Button variant="outline" size="sm" className="gap-2" onClick={() => router.push('/movements/transfer')}>
-            <Truck className="h-4 w-4" />
-            Transferir
-          </Button>
+          canManage ? (
+            <Button variant="outline" size="sm" className="gap-2" onClick={() => router.push('/movements/transfer')}>
+              <Truck className="h-4 w-4" />
+              Transferir
+            </Button>
+          ) : undefined
         }
       />
 
@@ -215,7 +220,7 @@ export default function StockPage() {
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {group.items.map((e, i) => (
-                      <tr key={`${e.product_id}-${e.warehouse_id}-${i}`} className={`${rowBg(e)}`}>
+                      <tr key={`${e.product_id}-${e.warehouse_id}-${i}`} className={`${rowBg(e)} cursor-pointer hover:bg-gray-50`} onClick={() => router.push(`/products/${e.product_id}`)}>
                         <td className="px-4 py-2.5">
                           <span className="font-medium text-gray-900">{e.product?.name}</span>
                           {e.product?.brand && <span className="ml-2 text-xs text-gray-400">{e.product.brand}</span>}
@@ -260,7 +265,8 @@ export default function StockPage() {
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {group.items.map((e, i) => (
                   <Card key={`${e.product_id}-${e.warehouse_id}-${i}`}
-                    className={`transition-shadow hover:shadow-md ${e.isNegative ? 'border-red-300 bg-red-50' : e.isLow ? 'border-amber-300 bg-amber-50' : ''}`}>
+                    className={`transition-shadow hover:shadow-md cursor-pointer ${e.isNegative ? 'border-red-300 bg-red-50' : e.isLow ? 'border-amber-300 bg-amber-50' : ''}`}
+                    onClick={() => router.push(`/products/${e.product_id}`)}>
                     <CardContent className="pt-4 pb-3">
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <div className="min-w-0">

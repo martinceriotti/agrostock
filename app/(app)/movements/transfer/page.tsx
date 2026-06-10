@@ -28,6 +28,11 @@ type TransferData = z.infer<typeof transferSchema>
 export default function TransferPage() {
   const router = useRouter()
   const { data: user } = useUser()
+
+  if (user && user.role === 'engineer') {
+    router.replace('/stock')
+    return null
+  }
   const { data: stockData = [] } = useCurrentStock()
   const { data: allWarehouses = [] } = useWarehouses()
   const transfer = useTransferStock()

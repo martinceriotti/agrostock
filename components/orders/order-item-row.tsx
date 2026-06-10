@@ -109,6 +109,26 @@ export function OrderItemRow({ index, form, products, warehouses, onRemove }: Or
           <Trash2 className="h-4 w-4" />
         </Button>
       </div>
+
+      {/* Lote */}
+      <div className="col-span-2 sm:col-span-2">
+        <Input
+          placeholder="Lote (ej: L240510)"
+          className="bg-white"
+          {...form.register(`items.${index}.lote`)}
+        />
+      </div>
+
+      {/* Fecha de vencimiento */}
+      <div className="col-span-2 sm:col-span-2">
+        <Input
+          type="date"
+          className="bg-white"
+          {...form.register(`items.${index}.fecha_vencimiento`)}
+        />
+      </div>
+
+      <div className="hidden sm:block" />
     </div>
   )
 }

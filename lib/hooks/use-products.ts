@@ -90,6 +90,95 @@ export function useDeleteProduct() {
   })
 }
 
+// ─── Product Detail (price history) ──────────────────────
+
+export interface ProductPurchaseEntry {
+  id: string
+  quantity_ordered: number
+  unit_price: number | null
+  currency: 'ARS' | 'USD'
+  lote: string | null
+  fecha_vencimiento: string | null
+  price_usd: number | null
+  order: {
+    id: string
+    order_number: string
+    ordered_at: string
+    currency: 'ARS' | 'USD'
+    exchange_rate: number | null
+  }
+  supplier: { id: string; name: string } | null
+}
+
+export function useProductDetail(productId: string) {
+  const supabase = createClient()
+  return useQuery({
+    queryKey: ['product-detail', productId],
+    enabled: !!productId,
+    queryFn: async (): Promise<ProductPurchaseEntry[]> => {
+      const { data, error } = await supabase
+        .from('purchase_order_items')
+        .select(`
+          id, quantity_ordered, unit_price, currency, lote, fecha_vencimiento,
+          purchase_orders!inner(id, order_number, ordered_at, currency, exchange_rate, status, suppliers(id, name))
+        `)
+        .eq('product_id', productId)
+
+      if (error) throw error
+
+      type RawItem = {
+        id: string
+        quantity_ordered: number
+        unit_price: number | null
+        currency: 'ARS' | 'USD'
+        lote: string | null
+        fecha_vencimiento: string | null
+        purchase_orders: {
+          id: string
+          order_number: string
+          ordered_at: string
+          currency: 'ARS' | 'USD'
+          exchange_rate: number | null
+          status: string
+          suppliers: { id: string; name: string } | null
+        }
+      }
+
+      return ((data ?? []) as unknown as RawItem[])
+        .filter(item => item.purchase_orders.status !== 'cancelled')
+        .map(item => {
+          const po = item.purchase_orders
+          let price_usd: number | null = null
+          if (item.unit_price != null) {
+            if (item.currency === 'USD') {
+              price_usd = item.unit_price
+            } else if (po.exchange_rate && po.exchange_rate > 0) {
+              price_usd = item.unit_price / po.exchange_rate
+            }
+          }
+          return {
+            id: item.id,
+            quantity_ordered: item.quantity_ordered,
+            unit_price: item.unit_price,
+            currency: item.currency,
+            lote: item.lote,
+            fecha_vencimiento: item.fecha_vencimiento,
+            price_usd,
+            order: {
+              id: po.id,
+              order_number: po.order_number,
+              ordered_at: po.ordered_at,
+              currency: po.currency,
+              exchange_rate: po.exchange_rate,
+            },
+            supplier: po.suppliers,
+          }
+        })
+        .sort((a, b) => new Date(b.order.ordered_at).getTime() - new Date(a.order.ordered_at).getTime())
+    },
+  })
+}
+
 // ─── Categories ───────────────────────────────────────────
 
 export function useCategories() {

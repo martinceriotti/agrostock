@@ -24,6 +24,11 @@ import { format } from 'date-fns'
 export default function NewOrderPage() {
   const router = useRouter()
   const { data: user } = useUser()
+
+  if (user && user.role === 'engineer') {
+    router.replace('/orders')
+    return null
+  }
   const { data: products = [] } = useProducts()
   const { data: warehouses = [] } = useWarehouses()
   const { data: suppliers = [] } = useSuppliers()

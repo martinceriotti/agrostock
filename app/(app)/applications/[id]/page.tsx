@@ -19,6 +19,7 @@ import { cn } from '@/lib/utils'
 const statusConfig = {
   draft: { label: 'Borrador', class: 'bg-gray-100 text-gray-700' },
   sent: { label: 'Enviada', class: 'bg-blue-100 text-blue-700' },
+  sent_engineer: { label: 'Pendiente aprobación', class: 'bg-amber-100 text-amber-700' },
   executed: { label: 'Ejecutada', class: 'bg-green-100 text-green-700' },
 }
 
@@ -32,11 +33,13 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
   const updateStatus = useUpdateApplicationStatus()
 
   const canManage = user?.role === 'admin' || user?.role === 'manager'
+  const isMyDraft = user?.role === 'engineer' && app?.order_status === 'draft' && app?.created_by === user.id
 
   if (isLoading) return <div className="p-8 text-center text-gray-500">Cargando...</div>
   if (!app) return <div className="p-8 text-center text-gray-500">Orden no encontrada</div>
 
-  const statusInfo = statusConfig[app.order_status] ?? statusConfig.draft
+  const statusKey = app.order_status === 'sent' && user?.role === 'engineer' ? 'sent_engineer' : app.order_status
+  const statusInfo = statusConfig[statusKey as keyof typeof statusConfig] ?? statusConfig.draft
 
   async function handleExecute() {
     if (!user?.organization_id) return
@@ -86,6 +89,17 @@ export default function ApplicationDetailPage({ params }: { params: Promise<{ id
               disabled={updateStatus.isPending}
             >
               <Send className="h-4 w-4" />Marcar como enviada
+            </Button>
+          )}
+
+          {isMyDraft && (
+            <Button
+              variant="outline"
+              className="gap-2 border-amber-300 text-amber-700 hover:bg-amber-50"
+              onClick={handleMarkSent}
+              disabled={updateStatus.isPending}
+            >
+              <Send className="h-4 w-4" />Enviar para aprobación
             </Button>
           )}
 

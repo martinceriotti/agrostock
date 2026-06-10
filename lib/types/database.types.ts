@@ -228,6 +228,8 @@ export type Database = {
           quantity_received: number
           unit_price: number | null
           currency: 'ARS' | 'USD'
+          lote: string | null
+          fecha_vencimiento: string | null
         }
         Insert: {
           id?: string
@@ -238,6 +240,8 @@ export type Database = {
           quantity_received?: number
           unit_price?: number | null
           currency?: 'ARS' | 'USD'
+          lote?: string | null
+          fecha_vencimiento?: string | null
         }
         Update: {
           id?: string
@@ -248,6 +252,8 @@ export type Database = {
           quantity_received?: number
           unit_price?: number | null
           currency?: 'ARS' | 'USD'
+          lote?: string | null
+          fecha_vencimiento?: string | null
         }
       }
       field_applications: {
