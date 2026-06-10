@@ -1,9 +1,11 @@
 import { LoginForm } from '@/components/auth/login-form'
+import { AuthHashHandler } from '@/components/auth/auth-hash-handler'
 import { Leaf } from 'lucide-react'
 
 export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-950 to-green-800 px-4">
+      <AuthHashHandler />
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="text-center mb-8">
