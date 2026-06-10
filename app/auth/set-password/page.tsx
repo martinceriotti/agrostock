@@ -19,30 +19,40 @@ export default function SetPasswordPage() {
   useEffect(() => {
     async function init() {
       const supabase = createClient()
+      const hash = window.location.hash
+      console.log('[SetPassword] hash:', hash || '(vacío)')
 
       // Caso A: tokens en el hash (invite o recovery via implicit flow)
-      const hash = window.location.hash
       if (hash.includes('access_token')) {
         const params = new URLSearchParams(hash.slice(1))
         const access_token = params.get('access_token')
         const refresh_token = params.get('refresh_token')
+        console.log('[SetPassword] access_token:', access_token ? '(presente)' : '(ausente)')
+        console.log('[SetPassword] refresh_token:', refresh_token ? '(presente)' : '(ausente)')
+
         if (access_token && refresh_token) {
-          const { error } = await supabase.auth.setSession({ access_token, refresh_token })
-          if (!error) {
+          console.log('[SetPassword] Llamando setSession...')
+          const { data, error } = await supabase.auth.setSession({ access_token, refresh_token })
+          console.log('[SetPassword] setSession result — session:', data.session ? 'ok' : 'null', '| error:', error?.message ?? 'ninguno')
+          if (!error && data.session) {
             window.history.replaceState({}, '', window.location.pathname)
             setReady(true)
             return
           }
+          console.error('[SetPassword] setSession falló:', error?.message)
         }
       }
 
       // Caso B: sesión ya activa (viene del callback PKCE tras reset password)
+      console.log('[SetPassword] Sin hash tokens, verificando sesión existente...')
       const { data: { session } } = await supabase.auth.getSession()
+      console.log('[SetPassword] getSession:', session ? `ok (${session.user.email})` : 'null')
       if (session) {
         setReady(true)
         return
       }
 
+      console.warn('[SetPassword] Sin sesión. Redirigiendo a login.')
       router.replace('/login?error=El+link+expiró.+Pedí+uno+nuevo+al+administrador.')
     }
 
