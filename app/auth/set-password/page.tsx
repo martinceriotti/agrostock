@@ -17,24 +17,36 @@ export default function SetPasswordPage() {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    const supabase = createClient()
+    async function init() {
+      const supabase = createClient()
 
-    // Caso A: sesión ya activa (viene del callback PKCE tras reset password)
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) { setReady(true); return }
-
-      // Caso B: viene del link de invitación (implicit flow con hash tokens)
-      // El cliente detecta los tokens del hash y dispara SIGNED_IN
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-        if (event === 'SIGNED_IN' && session) {
-          setReady(true)
-          subscription.unsubscribe()
-        } else if (event === 'INITIAL_SESSION' && !session) {
-          router.replace('/login?error=El+link+expiró.+Pedí+uno+nuevo+al+administrador.')
-          subscription.unsubscribe()
+      // Caso A: tokens en el hash (invite o recovery via implicit flow)
+      const hash = window.location.hash
+      if (hash.includes('access_token')) {
+        const params = new URLSearchParams(hash.slice(1))
+        const access_token = params.get('access_token')
+        const refresh_token = params.get('refresh_token')
+        if (access_token && refresh_token) {
+          const { error } = await supabase.auth.setSession({ access_token, refresh_token })
+          if (!error) {
+            window.history.replaceState({}, '', window.location.pathname)
+            setReady(true)
+            return
+          }
         }
-      })
-    })
+      }
+
+      // Caso B: sesión ya activa (viene del callback PKCE tras reset password)
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session) {
+        setReady(true)
+        return
+      }
+
+      router.replace('/login?error=El+link+expiró.+Pedí+uno+nuevo+al+administrador.')
+    }
+
+    init()
   }, [router])
 
   async function handleSubmit(e: React.FormEvent) {
