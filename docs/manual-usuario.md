@@ -167,9 +167,16 @@ Disponible en el menú **Usuarios** (sección administración).
 
 1. Hacer clic en **Nuevo Usuario**.
 2. Completar nombre, correo electrónico y rol.
-3. Hacer clic en **Invitar**.
+3. Hacer clic en **Enviar invitación**.
 
-El usuario recibirá un email con un link para establecer su contraseña. El link expira en 24 horas.
+El usuario recibirá un email con un botón "Crear mi cuenta". Al hacer clic, se le pedirá que establezca su contraseña antes de ingresar. El link expira en 1 hora.
+
+### Gestionar contraseña de un usuario
+
+Hacer clic en el ícono de llave (🔑) junto al usuario. Se abren dos opciones:
+
+- **Enviar email de restablecimiento** — el usuario recibe un correo con un link para elegir su nueva contraseña.
+- **Setear contraseña temporal** — el admin escribe una contraseña directamente y se la comunica al usuario por otro medio (WhatsApp, teléfono). El usuario podrá cambiarla luego.
 
 ### Cambiar nombre o rol
 
@@ -261,11 +268,11 @@ El usuario queda dentro de la app, listo para operar.
 El Admin puede invitar al resto de los usuarios desde **Usuarios** (menú lateral). Ver sección [9. Administración de usuarios](#9-administración-de-usuarios).
 
 Los usuarios invitados reciben un email con un link que:
-- Establece su contraseña
+- Los lleva a una pantalla para establecer su propia contraseña
 - Los asigna automáticamente a la misma organización que el Admin
 - Los lleva directo al dashboard (sin pasar por el onboarding)
 
-> **Importante:** El link de invitación expira en **24 horas**. Si el usuario no lo usa a tiempo, el Admin debe re-enviarlo desde el panel de Supabase (Authentication → Users → Send magic link / Reset password).
+> **Importante:** El link de invitación expira en **1 hora**. Si el usuario no lo usa a tiempo, el Admin puede usar la opción **Setear contraseña temporal** (ícono 🔑 en la lista de usuarios) para darle acceso de inmediato sin necesidad de reenviar el email.
 
 ---
 

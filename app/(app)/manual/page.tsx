@@ -156,11 +156,20 @@ export default function ManualPage() {
           <Steps steps={[
             'Hacer clic en Nuevo Usuario.',
             'Completar nombre, correo electrónico y rol.',
-            'Hacer clic en Invitar.',
+            'Hacer clic en Enviar invitación.',
           ]} />
           <p className="text-sm text-gray-700 mt-2">
-            El usuario recibirá un email con un link para establecer su contraseña. El link expira en 24 horas.
+            El usuario recibe un email con el botón "Crear mi cuenta". Al hacer clic, se le pide que establezca
+            su contraseña antes de ingresar. El link expira en 1 hora.
           </p>
+          <h4 className="font-semibold text-gray-800 mt-4 mb-1">Gestionar contraseña</h4>
+          <p className="text-sm text-gray-700 mb-1">
+            Hacer clic en el ícono de llave (🔑) junto al usuario. Se abren dos opciones:
+          </p>
+          <ul className="text-sm text-gray-700 list-disc list-inside space-y-1">
+            <li><strong>Enviar email de restablecimiento</strong> — el usuario recibe un correo para elegir su nueva contraseña.</li>
+            <li><strong>Contraseña temporal</strong> — el admin escribe una contraseña y se la comunica al usuario directamente.</li>
+          </ul>
           <h4 className="font-semibold text-gray-800 mt-4 mb-1">Cambiar nombre o rol</h4>
           <p className="text-sm text-gray-700">Hacer clic en el ícono de edición (lápiz) junto al usuario, modificar y guardar.</p>
           <h4 className="font-semibold text-gray-800 mt-4 mb-1">Eliminar usuario</h4>
@@ -301,8 +310,9 @@ Content-Type: application/json
             que lo asigna automáticamente a la misma organización y lo lleva directo al dashboard (sin pasar por el onboarding).
           </p>
           <Note>
-            El link de invitación expira en <strong>24 horas</strong>. Si el usuario no lo usa a tiempo, el Admin debe
-            re-enviarlo desde el panel de Supabase (Authentication → Users → Send magic link).
+            El link de invitación expira en <strong>1 hora</strong>. Si el usuario no lo usa a tiempo, el Admin puede
+            usar la opción <strong>Contraseña temporal</strong> (ícono 🔑 en la lista de usuarios) para darle acceso
+            de inmediato sin necesidad de reenviar el email.
           </Note>
 
           <h4 className="font-semibold text-gray-800 mt-5 mb-1">Aislamiento entre tenants</h4>
