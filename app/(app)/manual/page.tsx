@@ -98,6 +98,11 @@ export default function ManualPage() {
             El sistema registra automáticamente los movimientos de stock en el depósito indicado. Si todos los ítems
             se recibieron → la orden pasa a <strong>Recibida</strong>. Si se recibió una parte → <strong>Recepción parcial</strong>.
           </p>
+          <Note>
+            <strong>Tracking de lotes:</strong> si el ítem tiene número de lote registrado, la recepción crea
+            automáticamente un lote trackeado. A partir de ese momento el sistema puede informar cuánto stock queda
+            de ese lote específico.
+          </Note>
         </Section>
 
         <Section title="5. Orden de aplicación en campo">
@@ -106,7 +111,7 @@ export default function ManualPage() {
             'En el menú lateral, ir a Aplicaciones.',
             'Hacer clic en Nueva Orden de Aplicación.',
             'Completar: nombre del lote, cultivo, superficie (ha), fecha, notas y coordenadas (opcional, usar botón Detectar ubicación).',
-            'Agregar los productos con + Agregar producto: producto, depósito de origen, cantidad y dosis por ha.',
+            'Agregar los productos con + Agregar producto: producto, depósito de origen, cantidad y dosis por ha. Si el producto tiene lotes trackeados, aparece un selector de lote con cantidad y vencimiento — el sistema pre-selecciona el lote más próximo a vencer (FIFO) por defecto.',
             'Hacer clic en Crear Orden.',
           ]} />
           <Note>La orden se guarda en estado Borrador. El stock <strong>no se descuenta todavía</strong>.</Note>
@@ -162,7 +167,7 @@ export default function ManualPage() {
             Hacer clic en cualquier tarjeta o fila abre el <strong>detalle del producto</strong>.
           </p>
 
-          <h4 className="font-semibold text-gray-800 mt-4 mb-2">Detalle de producto — Análisis de precios</h4>
+          <h4 className="font-semibold text-gray-800 mt-4 mb-2">Detalle de producto — Análisis de precios y lotes</h4>
           <p className="text-xs text-gray-500 mb-2">Quién lo usa: todos los roles</p>
           <p className="text-sm text-gray-700 mb-2">
             Al hacer clic en un producto se abre una página con:
@@ -171,6 +176,7 @@ export default function ManualPage() {
             <li><strong>Estadísticas en USD</strong> — último precio, promedio, mínimo y máximo histórico.</li>
             <li><strong>Gráfico de evolución</strong> — precio USD en el tiempo, diferenciado por proveedor.</li>
             <li><strong>Historial de compras</strong> — fecha, N° OC, proveedor, cantidad, precio original, precio USD y lote.</li>
+            <li><strong>Lotes disponibles</strong> — tabla con todos los lotes del producto con stock mayor a cero: número de lote, depósito, fecha de vencimiento, cantidad y estado (<em>Vigente / Por vencer / Vencido</em>). Solo aparece si hay lotes trackeados.</li>
             <li><strong>Proveedores asociados</strong> — lista con fecha de primera y última compra.</li>
           </ul>
           <Note>

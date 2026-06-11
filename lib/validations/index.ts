@@ -66,6 +66,7 @@ export const fieldApplicationItemSchema = z.object({
   warehouse_id: z.string().min(1, 'El depósito es requerido'),
   dose_per_ha: z.number().positive().optional().nullable(),
   quantity_used: z.number().positive('La cantidad debe ser mayor a 0'),
+  lot_id: z.string().optional().nullable(),
 })
 
 export const fieldApplicationSchema = z.object({

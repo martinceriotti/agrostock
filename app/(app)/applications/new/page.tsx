@@ -11,15 +11,78 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useProducts, useWarehouses } from '@/lib/hooks/use-products'
-import { useCurrentStock } from '@/lib/hooks/use-stock'
+import { useCurrentStock, useActiveLots } from '@/lib/hooks/use-stock'
 import { useCreateApplication } from '@/lib/hooks/use-applications'
 import { useUser } from '@/lib/hooks/use-user'
 import { PageHeader } from '@/components/ui/page-header'
 import { Plus, Trash2, Loader2, ArrowLeft, AlertTriangle, LocateFixed } from 'lucide-react'
 import Link from 'next/link'
 import { format } from 'date-fns'
+import { es } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
 import { buttonVariants } from '@/components/ui/button'
+import { useEffect } from 'react'
+
+function LotSelector({
+  productId,
+  warehouseId,
+  value,
+  onChange,
+}: {
+  productId: string
+  warehouseId: string
+  value: string | null | undefined
+  onChange: (v: string | null) => void
+}) {
+  const { data: lots = [], isLoading } = useActiveLots(productId || null, warehouseId || null)
+
+  // FIFO: auto-seleccionar el lote más próximo a vencer cuando cargan los lotes
+  useEffect(() => {
+    if (!isLoading && lots.length > 0 && !value) {
+      onChange(lots[0].lot_id)
+    }
+    // onChange se omite: nueva referencia en cada render.
+    // lots[0]?.lot_id cambia cuando product/warehouse cambia (los lots son distintos).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading, lots[0]?.lot_id])
+
+  if (!productId || !warehouseId || (!isLoading && lots.length === 0)) return null
+
+  return (
+    <div className="space-y-1">
+      <Label className="text-xs">Lote (stock trackeado)</Label>
+      <Select
+        value={value ?? 'none'}
+        onValueChange={(v) => onChange(v === 'none' ? null : v)}
+        items={[
+          { value: 'none', label: 'Sin especificar lote' },
+          ...lots.map(l => ({
+            value: l.lot_id,
+            label: `${l.lote}${l.fecha_vencimiento ? ` — vence ${format(new Date(l.fecha_vencimiento), 'dd MMM yyyy', { locale: es })}` : ''} (${l.quantity} disp.)`,
+          })),
+        ]}
+      >
+        <SelectTrigger className="bg-white">
+          <SelectValue placeholder="Sin especificar lote" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="none">Sin especificar lote</SelectItem>
+          {lots.map((l) => (
+            <SelectItem key={l.lot_id} value={l.lot_id}>
+              <span className="font-mono">{l.lote}</span>
+              {l.fecha_vencimiento && (
+                <span className="ml-2 text-gray-500 text-xs">
+                  vence {format(new Date(l.fecha_vencimiento), 'dd MMM yyyy', { locale: es })}
+                </span>
+              )}
+              <span className="ml-2 text-gray-500 text-xs">({l.quantity} disp.)</span>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  )
+}
 
 export default function NewApplicationPage() {
   const router = useRouter()
@@ -52,7 +115,7 @@ export default function NewApplicationPage() {
       withholding_period: '',
       latitude: null,
       longitude: null,
-      items: [{ product_id: '', warehouse_id: '', dose_per_ha: null, quantity_used: 0 }],
+      items: [{ product_id: '', warehouse_id: '', dose_per_ha: null, quantity_used: 0, lot_id: null }],
     },
   })
 
@@ -272,7 +335,7 @@ export default function NewApplicationPage() {
               variant="outline"
               size="sm"
               className="gap-2"
-              onClick={() => append({ product_id: '', warehouse_id: '', dose_per_ha: null, quantity_used: 0 })}
+              onClick={() => append({ product_id: '', warehouse_id: '', dose_per_ha: null, quantity_used: 0, lot_id: null })}
             >
               <Plus className="h-4 w-4" />Agregar
             </Button>
@@ -298,7 +361,10 @@ export default function NewApplicationPage() {
                       <Label className="text-xs">Producto *</Label>
                       <Select
                         value={form.watch(`items.${index}.product_id`)}
-                        onValueChange={(v) => form.setValue(`items.${index}.product_id`, v ?? '')}
+                        onValueChange={(v) => {
+                          form.setValue(`items.${index}.product_id`, v ?? '')
+                          form.setValue(`items.${index}.lot_id`, null)
+                        }}
                         items={products.map(p => ({ value: p.id, label: `${p.name}${p.brand ? ` — ${p.brand}` : ''} (${p.unit})` }))}
                       >
                         <SelectTrigger className="bg-white">
@@ -317,7 +383,10 @@ export default function NewApplicationPage() {
                       <Label className="text-xs">Depósito origen *</Label>
                       <Select
                         value={form.watch(`items.${index}.warehouse_id`)}
-                        onValueChange={(v) => form.setValue(`items.${index}.warehouse_id`, v ?? '')}
+                        onValueChange={(v) => {
+                          form.setValue(`items.${index}.warehouse_id`, v ?? '')
+                          form.setValue(`items.${index}.lot_id`, null)
+                        }}
                         items={warehouses.map(w => ({ value: w.id, label: w.name }))}
                       >
                         <SelectTrigger className="bg-white">
@@ -331,6 +400,13 @@ export default function NewApplicationPage() {
                       </Select>
                     </div>
                   </div>
+
+                  <LotSelector
+                    productId={productId}
+                    warehouseId={warehouseId}
+                    value={form.watch(`items.${index}.lot_id`)}
+                    onChange={(v) => form.setValue(`items.${index}.lot_id`, v)}
+                  />
 
                   <div className="grid gap-2 sm:grid-cols-2 items-end">
                     <div className="space-y-1">

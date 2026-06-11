@@ -11,7 +11,7 @@ import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useProducts } from '@/lib/hooks/use-products'
 import { useProductDetail } from '@/lib/hooks/use-products'
-import { useCurrentStock } from '@/lib/hooks/use-stock'
+import { useCurrentStock, useLotsByProduct } from '@/lib/hooks/use-stock'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Legend,
@@ -24,6 +24,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const { data: products = [], isLoading: loadingProduct } = useProducts()
   const { data: history = [], isLoading: loadingHistory } = useProductDetail(id)
   const { data: stockData = [] } = useCurrentStock()
+  const { data: lots = [] } = useLotsByProduct(id)
 
   const product = products.find(p => p.id === id)
 
@@ -221,6 +222,64 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           )}
         </CardContent>
       </Card>
+
+      {/* Lotes disponibles */}
+      {lots.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Lotes disponibles</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-left text-gray-500 text-xs uppercase tracking-wide">
+                    <th className="pb-2 pr-4 font-medium">Lote</th>
+                    <th className="pb-2 pr-4 font-medium">Depósito</th>
+                    <th className="pb-2 pr-4 font-medium">Vencimiento</th>
+                    <th className="pb-2 pr-4 font-medium text-right">Cantidad</th>
+                    <th className="pb-2 font-medium">Estado</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {lots.map((lot) => {
+                    const today = new Date()
+                    const expiry = lot.fecha_vencimiento ? new Date(lot.fecha_vencimiento) : null
+                    const isExpired = expiry && expiry < today
+                    const isExpiringSoon = expiry && !isExpired && expiry < new Date(today.getTime() + 60 * 24 * 60 * 60 * 1000)
+                    return (
+                      <tr key={lot.lot_id} className="hover:bg-gray-50">
+                        <td className="py-2.5 pr-4 font-mono text-xs font-medium">{lot.lote}</td>
+                        <td className="py-2.5 pr-4 text-gray-600">{lot.warehouses?.name ?? '—'}</td>
+                        <td className="py-2.5 pr-4">
+                          {expiry ? (
+                            <span className={isExpired ? 'text-red-600 font-medium' : isExpiringSoon ? 'text-amber-600' : 'text-gray-600'}>
+                              {format(expiry, 'dd MMM yyyy', { locale: es })}
+                            </span>
+                          ) : '—'}
+                        </td>
+                        <td className="py-2.5 pr-4 text-right font-semibold tabular-nums">
+                          {lot.quantity.toLocaleString('es-AR')}
+                          <span className="ml-1 text-xs font-normal text-gray-400">{product.unit}</span>
+                        </td>
+                        <td className="py-2.5">
+                          {isExpired ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">Vencido</span>
+                          ) : isExpiringSoon ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-700">Por vencer</span>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">Vigente</span>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Proveedores */}
       {suppliers.length > 0 && (

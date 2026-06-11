@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase/client'
 import type { StockEntry, StockMovementRow } from '@/lib/types/app.types'
+import type { CurrentLotStock } from '@/lib/types/database.types'
 import { toast } from 'sonner'
 import { logActivity } from '@/lib/utils/log-activity'
 
@@ -51,6 +52,45 @@ export function useStockMovements(filters?: { product_id?: string; warehouse_id?
       if (error) throw error
       return (data ?? []) as unknown as StockMovementRow[]
     },
+  })
+}
+
+/** Lotes con stock > 0 para un producto+depósito específico. Útil en el selector de lotes de aplicaciones. */
+export function useActiveLots(productId: string | null, warehouseId: string | null) {
+  const supabase = createClient()
+  return useQuery({
+    queryKey: ['lot-stock', productId, warehouseId],
+    queryFn: async (): Promise<CurrentLotStock[]> => {
+      const { data, error } = await supabase
+        .from('current_lot_stock')
+        .select('*')
+        .eq('product_id', productId!)
+        .eq('warehouse_id', warehouseId!)
+        .gt('quantity', 0)
+        .order('fecha_vencimiento', { ascending: true, nullsFirst: false })
+      if (error) throw error
+      return data ?? []
+    },
+    enabled: !!productId && !!warehouseId,
+  })
+}
+
+/** Todos los lotes (con stock > 0) de un producto, sin filtrar por depósito. Para el detalle de producto. */
+export function useLotsByProduct(productId: string | null) {
+  const supabase = createClient()
+  return useQuery({
+    queryKey: ['lot-stock', productId],
+    queryFn: async (): Promise<(CurrentLotStock & { warehouses: { id: string; name: string } | null })[]> => {
+      const { data, error } = await supabase
+        .from('current_lot_stock')
+        .select('*, warehouses:warehouse_id (id, name)')
+        .eq('product_id', productId!)
+        .gt('quantity', 0)
+        .order('fecha_vencimiento', { ascending: true, nullsFirst: false })
+      if (error) throw error
+      return (data ?? []) as unknown as (CurrentLotStock & { warehouses: { id: string; name: string } | null })[]
+    },
+    enabled: !!productId,
   })
 }
 

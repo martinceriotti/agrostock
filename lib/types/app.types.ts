@@ -59,6 +59,8 @@ export interface OrderItemRow {
   quantity_received: number
   unit_price: number | null
   currency: string
+  lote: string | null
+  fecha_vencimiento: string | null
   products: { id: string; name: string; unit: string } | null
   warehouses: { id: string; name: string } | null
 }
@@ -100,6 +102,7 @@ export interface ApplicationItemRow {
   warehouse_id: string
   quantity_used: number
   dose_per_ha: number | null
+  lot_id: string | null
   products: { id: string; name: string; unit: string; active_ingredient: string | null } | null
   warehouses: { id: string; name: string } | null
 }

@@ -84,6 +84,8 @@ El sistema registra automáticamente los movimientos de stock (entradas) en el d
 - Si todos los ítems se recibieron completos → la orden pasa a **Recibida**.  
 - Si se recibió una parte → la orden pasa a **Recepción parcial**.
 
+> **Tracking de lotes:** Si el ítem tiene número de lote registrado, la recepción crea automáticamente un lote trackeado (`stock_lot`). A partir de ese momento el sistema puede informar cuánto stock queda de ese lote específico.
+
 ---
 
 ## 5. Flujo: Orden de aplicación en campo
@@ -102,6 +104,7 @@ El sistema registra automáticamente los movimientos de stock (entradas) en el d
 4. Agregar los productos con **+ Agregar producto**:
    - Seleccionar el **producto** del catálogo.
    - Seleccionar el **depósito de origen**.
+   - Si el producto tiene **lotes trackeados**, aparece automáticamente un selector de lote con los disponibles (cantidad y fecha de vencimiento). El sistema pre-selecciona el lote **más próximo a vencer (FIFO)** por defecto. Puede cambiarse manualmente.
    - Ingresar la **cantidad a usar** y la **dosis (L o kg por ha)**.
 5. Hacer clic en **Crear Orden**.
 
@@ -165,7 +168,7 @@ Los productos con stock por debajo del mínimo configurado se marcan con una ale
 
 Hacer clic en cualquier tarjeta o fila de la vista de stock navega al **detalle del producto**.
 
-### Detalle de producto — Análisis de precios
+### Detalle de producto — Análisis de precios y lotes
 
 **Quién lo usa:** Todos los roles
 
@@ -174,7 +177,8 @@ Al hacer clic en un producto en la vista de stock, se abre una página con:
 1. **Estadísticas de precio en USD** — último precio, promedio, mínimo y máximo histórico.
 2. **Gráfico de evolución** — línea de precio USD en el tiempo, diferenciada por proveedor.
 3. **Historial de compras** — tabla con fecha, N° de OC, proveedor, cantidad, precio original, precio en USD y lote.
-4. **Proveedores asociados** — lista de proveedores con fecha de primera y última compra.
+4. **Lotes disponibles** — tabla con todos los lotes del producto que tienen stock mayor a cero. Muestra número de lote, depósito, fecha de vencimiento, cantidad disponible y estado (**Vigente** / **Por vencer** / **Vencido**). Solo aparece si hay al menos un lote trackeado.
+5. **Proveedores asociados** — lista de proveedores con fecha de primera y última compra.
 
 > **Nota:** Los precios en ARS se convierten a USD usando el tipo de cambio registrado en cada orden de compra. Si una orden no tiene tipo de cambio cargado, ese ítem aparece como "—" en la columna USD.
 

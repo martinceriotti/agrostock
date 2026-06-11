@@ -348,6 +348,7 @@ export type Database = {
           warehouse_id: string
           quantity_used: number
           dose_per_ha: number | null
+          lot_id: string | null
         }
         Insert: {
           id?: string
@@ -356,6 +357,7 @@ export type Database = {
           warehouse_id: string
           quantity_used: number
           dose_per_ha?: number | null
+          lot_id?: string | null
         }
         Update: {
           id?: string
@@ -364,6 +366,39 @@ export type Database = {
           warehouse_id?: string
           quantity_used?: number
           dose_per_ha?: number | null
+          lot_id?: string | null
+        }
+      }
+      stock_lots: {
+        Row: {
+          id: string
+          organization_id: string | null
+          product_id: string
+          warehouse_id: string
+          lote: string
+          fecha_vencimiento: string | null
+          purchase_order_item_id: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          organization_id?: string | null
+          product_id: string
+          warehouse_id: string
+          lote: string
+          fecha_vencimiento?: string | null
+          purchase_order_item_id?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string | null
+          product_id?: string
+          warehouse_id?: string
+          lote?: string
+          fecha_vencimiento?: string | null
+          purchase_order_item_id?: string | null
+          created_at?: string
         }
       }
       stock_movements: {
@@ -380,6 +415,7 @@ export type Database = {
           created_by: string
           organization_id: string | null
           created_at: string
+          lot_id: string | null
         }
         Insert: {
           id?: string
@@ -394,6 +430,7 @@ export type Database = {
           created_by: string
           organization_id?: string | null
           created_at?: string
+          lot_id?: string | null
         }
         Update: {
           id?: string
@@ -408,6 +445,7 @@ export type Database = {
           created_by?: string
           organization_id?: string | null
           created_at?: string
+          lot_id?: string | null
         }
       }
     }
@@ -416,6 +454,17 @@ export type Database = {
         Row: {
           product_id: string
           warehouse_id: string
+          quantity: number
+        }
+      }
+      current_lot_stock: {
+        Row: {
+          lot_id: string
+          organization_id: string | null
+          product_id: string
+          warehouse_id: string
+          lote: string
+          fecha_vencimiento: string | null
           quantity: number
         }
       }
@@ -440,4 +489,6 @@ export type PurchaseOrderItem = Tables<'purchase_order_items'>
 export type FieldApplication = Tables<'field_applications'>
 export type FieldApplicationItem = Tables<'field_application_items'>
 export type StockMovement = Tables<'stock_movements'>
+export type StockLot = Tables<'stock_lots'>
 export type CurrentStock = Database['public']['Views']['current_stock']['Row']
+export type CurrentLotStock = Database['public']['Views']['current_lot_stock']['Row']

@@ -48,6 +48,7 @@ export function useOrder(id: string) {
           profiles:created_by (id, full_name),
           purchase_order_items (
             id, quantity_ordered, quantity_received, unit_price, currency,
+            lote, fecha_vencimiento,
             products:product_id (id, name, unit),
             warehouses:warehouse_id (id, name)
           )
@@ -115,7 +116,16 @@ export function useReceiveOrder() {
       orgId,
     }: {
       orderId: string
-      items: Array<{ id: string; quantity_received: number; product_id: string; warehouse_id: string; unit_price: number | null; currency: string }>
+      items: Array<{
+        id: string
+        quantity_received: number
+        product_id: string
+        warehouse_id: string
+        unit_price: number | null
+        currency: string
+        lote: string | null
+        fecha_vencimiento: string | null
+      }>
       userId: string
       orgId: string
     }) => {
@@ -129,6 +139,25 @@ export function useReceiveOrder() {
 
         if (updateError) throw updateError
 
+        // Crear stock_lot si el item tiene número de lote
+        let lotId: string | null = null
+        if (item.lote) {
+          const { data: lot, error: lotError } = await supabase
+            .from('stock_lots')
+            .insert({
+              organization_id: orgId,
+              product_id: item.product_id,
+              warehouse_id: item.warehouse_id,
+              lote: item.lote,
+              fecha_vencimiento: item.fecha_vencimiento ?? null,
+              purchase_order_item_id: item.id,
+            })
+            .select('id')
+            .single()
+          if (lotError) throw lotError
+          lotId = lot.id
+        }
+
         const { error: movError } = await supabase.from('stock_movements').insert({
           movement_type: 'purchase_receipt',
           product_id: item.product_id,
@@ -139,6 +168,7 @@ export function useReceiveOrder() {
           reference_id: item.id,
           created_by: userId,
           organization_id: orgId,
+          lot_id: lotId,
         })
 
         if (movError) throw movError
@@ -161,6 +191,7 @@ export function useReceiveOrder() {
       qc.invalidateQueries({ queryKey: ['orders'] })
       qc.invalidateQueries({ queryKey: ['current-stock'] })
       qc.invalidateQueries({ queryKey: ['stock-movements'] })
+      qc.invalidateQueries({ queryKey: ['lot-stock'] })
       toast.success('Recepción registrada. Stock actualizado.')
       logActivity({
         action: 'receive_order',

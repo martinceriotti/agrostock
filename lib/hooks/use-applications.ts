@@ -91,6 +91,7 @@ export function useCreateApplication() {
         warehouse_id: item.warehouse_id,
         quantity_used: item.quantity_used,
         dose_per_ha: item.dose_per_ha ?? null,
+        lot_id: item.lot_id ?? null,
       }))
 
       const { error: itemsError } = await supabase.from('field_application_items').insert(itemsToInsert)
@@ -131,10 +132,10 @@ export function useExecuteApplication() {
       userId: string
       orgId: string
     }) => {
-      // Obtener los ítems de la aplicación
+      // Obtener los ítems de la aplicación (con lot_id)
       const { data: items, error: itemsError } = await supabase
         .from('field_application_items')
-        .select('product_id, warehouse_id, quantity_used')
+        .select('product_id, warehouse_id, quantity_used, lot_id')
         .eq('application_id', applicationId)
 
       if (itemsError) throw itemsError
@@ -157,6 +158,7 @@ export function useExecuteApplication() {
           notes: `Aplicación en ${app?.field_name ?? ''}`,
           created_by: userId,
           organization_id: orgId,
+          lot_id: item.lot_id ?? null,
         })
         if (movError) throw movError
       }
@@ -173,6 +175,7 @@ export function useExecuteApplication() {
       qc.invalidateQueries({ queryKey: ['applications'] })
       qc.invalidateQueries({ queryKey: ['current-stock'] })
       qc.invalidateQueries({ queryKey: ['stock-movements'] })
+      qc.invalidateQueries({ queryKey: ['lot-stock'] })
       qc.invalidateQueries({ queryKey: ['dashboard'] })
       toast.success('Aplicación ejecutada. Stock descontado.')
       logActivity({
