@@ -50,17 +50,19 @@ export default function StockPage() {
   }, [stockData])
 
   const filtered = useMemo(() => {
-    return items.filter(e => {
-      if (!e.product) return false
-      if (search) {
-        const q = search.toLowerCase()
-        if (!e.product.name.toLowerCase().includes(q) && !(e.product.brand ?? '').toLowerCase().includes(q)) return false
-      }
-      if (warehouseFilter !== 'all' && e.warehouse_id !== warehouseFilter) return false
-      if (categoryFilter !== 'all' && e.product.category_id !== categoryFilter) return false
-      if (alertOnly && !e.isLow && !e.isNegative) return false
-      return true
-    })
+    return items
+      .filter(e => {
+        if (!e.product) return false
+        if (search) {
+          const q = search.toLowerCase()
+          if (!e.product.name.toLowerCase().includes(q) && !(e.product.brand ?? '').toLowerCase().includes(q)) return false
+        }
+        if (warehouseFilter !== 'all' && e.warehouse_id !== warehouseFilter) return false
+        if (categoryFilter !== 'all' && e.product.category_id !== categoryFilter) return false
+        if (alertOnly && !e.isLow && !e.isNegative) return false
+        return true
+      })
+      .sort((a, b) => (a.product?.name ?? '').localeCompare(b.product?.name ?? '', 'es'))
   }, [items, search, warehouseFilter, categoryFilter, alertOnly])
 
   const alertCount = items.filter(e => e.isLow || e.isNegative).length
