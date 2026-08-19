@@ -11,6 +11,7 @@ import {
   BookOpen,
   Truck,
   Database,
+  PenLine,
 } from 'lucide-react'
 
 export const navItems = [
@@ -48,6 +49,12 @@ export const navItems = [
     label: 'Transferencia',
     href: '/movements/transfer',
     icon: Truck,
+    roles: ['admin', 'manager'],
+  },
+  {
+    label: 'Ajuste de Stock',
+    href: '/movements/adjustment',
+    icon: PenLine,
     roles: ['admin', 'manager'],
   },
   {
