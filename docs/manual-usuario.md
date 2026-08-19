@@ -14,6 +14,7 @@
 10. [Control de actividad](#10-control-de-actividad)
 11. [Alta de un nuevo tenant (administrador del sistema)](#11-alta-de-un-nuevo-tenant-administrador-del-sistema)
 12. [Módulo Silos Bolsa (IoT)](#12-módulo-silos-bolsa-iot)
+13. [Flujo: Ajuste manual de stock](#13-flujo-ajuste-manual-de-stock)
 
 ---
 
@@ -36,6 +37,7 @@ Si olvidó su contraseña, utilice el link "¿Olvidaste tu contraseña?" en la p
 | Enviar aplicación propia para aprobación | ✓ | ✓ | ✓ |
 | Ejecutar aplicaciones (descuenta stock) | — | ✓ | ✓ |
 | Transferir stock entre depósitos | — | ✓ | ✓ |
+| Ajustar stock manualmente | — | ✓ | ✓ |
 | Crear y recibir órdenes de compra | — | ✓ | ✓ |
 | Administrar productos y depósitos | — | ✓ | ✓ |
 | Configuración general | — | — | ✓ |
@@ -407,6 +409,26 @@ Cada silo tiene una API key única generada automáticamente al crearlo. El gate
 - **Sensores:** puntos de medición por silo (label, posición en metros desde el inicio de la bolsa).
 - **Lecturas:** serie temporal de mediciones por sensor.
 - **Alertas:** historial de alertas disparadas (activas y resueltas).
+
+---
+
+## 13. Flujo: Ajuste manual de stock
+
+**Quién lo hace:** Manager o Admin
+
+Permite corregir el stock registrado contra un recuento físico real (por recuento, rotura/derrame, robo o pérdida, vencimiento de un lote, o corrección de una carga anterior mal hecha), sin pasar por una orden de compra ni una transferencia.
+
+1. En el menú lateral, ir a **Ajuste de Stock**.
+2. Seleccionar el **producto**.
+3. Seleccionar el **depósito**.
+4. Si el producto tiene lotes activos en ese depósito, seleccionar el **lote** a ajustar, o "Sin lote específico" para un ajuste general.
+5. Ingresar la **cantidad real contada**. El sistema calcula automáticamente la diferencia contra el stock actual — no hace falta calcular el ajuste a mano.
+6. Seleccionar el **motivo** (Recuento físico, Rotura/derrame, Robo o pérdida, Vencimiento, Corrección de carga, Otro) y agregar un **detalle** obligatorio.
+7. Hacer clic en **Confirmar ajuste**.
+
+Si la cantidad contada es igual al stock actual, el sistema no permite confirmar (no hay nada que ajustar).
+
+Los movimientos quedan registrados en el historial con tipo **Ajuste** y pueden verse en la sección Movimientos.
 
 ---
 

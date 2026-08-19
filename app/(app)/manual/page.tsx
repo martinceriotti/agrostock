@@ -51,6 +51,7 @@ export default function ManualPage() {
                 ['Enviar aplicación propia para aprobación', true, true, true],
                 ['Ejecutar aplicaciones (descuenta stock)', false, true, true],
                 ['Transferir stock entre depósitos', false, true, true],
+                ['Ajustar stock manualmente', false, true, true],
                 ['Crear y recibir órdenes de compra', false, true, true],
                 ['Administrar productos y depósitos', false, true, true],
                 ['Configuración general', false, false, true],
@@ -361,6 +362,24 @@ Content-Type: application/json
             datos de otra. Esto está garantizado por las políticas de seguridad (RLS) de la base de datos: cada consulta
             filtra automáticamente por la organización del usuario autenticado.
           </p>
+        </Section>
+
+        <Section title="13. Ajuste manual de stock">
+          <p className="text-xs text-gray-500 mb-3">Quién lo hace: Manager o Admin — menú: Ajuste de Stock</p>
+          <p className="text-sm text-gray-700 mb-3">
+            Permite corregir el stock registrado contra un recuento físico real (recuento, rotura/derrame, robo o
+            pérdida, vencimiento de un lote, o corrección de una carga anterior), sin pasar por una orden de compra
+            ni una transferencia.
+          </p>
+          <Steps steps={[
+            'En el menú lateral, ir a Ajuste de Stock.',
+            'Seleccionar el producto y el depósito.',
+            'Si el producto tiene lotes activos, seleccionar el lote a ajustar (o "Sin lote específico").',
+            'Ingresar la cantidad real contada — el sistema calcula la diferencia automáticamente.',
+            'Seleccionar el motivo y agregar un detalle obligatorio.',
+            'Hacer clic en Confirmar ajuste.',
+          ]} />
+          <Note>Si la cantidad contada es igual al stock actual, el sistema no permite confirmar. Los movimientos quedan en el historial con tipo Ajuste.</Note>
         </Section>
 
         <div className="border-t border-gray-200 mt-10 pt-4 text-xs text-gray-400 text-center">
