@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -30,7 +30,7 @@ const NO_LOT = '__no_lot__'
 const adjustmentSchema = z.object({
   product_id:        z.string().min(1, 'Seleccioná un producto'),
   warehouse_id:      z.string().min(1, 'Seleccioná el depósito'),
-  lot_id:            z.string().min(1),
+  lot_id:            z.string(),
   counted_quantity:  z.number().min(0, 'La cantidad no puede ser negativa'),
   reason_category:   z.enum(['recount', 'breakage', 'theft_loss', 'expiry', 'data_correction', 'other']),
   reason_detail:     z.string().min(3, 'Contá brevemente el motivo'),
@@ -50,7 +50,7 @@ export default function AdjustmentPage() {
   const form = useForm<AdjustmentData>({
     resolver: zodResolver(adjustmentSchema),
     defaultValues: {
-      product_id: '', warehouse_id: '', lot_id: NO_LOT,
+      product_id: '', warehouse_id: '', lot_id: '',
       counted_quantity: undefined, reason_category: undefined, reason_detail: '',
     },
   })
@@ -79,7 +79,7 @@ export default function AdjustmentPage() {
 
   const selectedLotId = form.watch('lot_id')
 
-  // Stock actual de la combinación elegida (por lote, o producto+depósito si no hay lote)
+  // Stock actual de la combinación elegida (por lote, o producto+depósito si no hay lote elegido)
   const currentQuantity = useMemo(() => {
     if (!selectedProduct || !selectedWarehouse) return null
     if (selectedLotId && selectedLotId !== NO_LOT) {
@@ -96,9 +96,17 @@ export default function AdjustmentPage() {
     return countedQuantity - currentQuantity
   }, [currentQuantity, countedQuantity])
 
+  useEffect(() => {
+    if (user && user.role === 'engineer') router.replace('/stock')
+  }, [user, router])
+
   async function onSubmit(data: AdjustmentData) {
     if (!user?.id || !user?.organization_id) return
     if (currentQuantity === null) return
+    if (activeLots.length > 0 && data.lot_id === '') {
+      form.setError('lot_id', { message: 'Seleccioná un lote o "Sin lote específico" para un ajuste general' })
+      return
+    }
     const finalDelta = data.counted_quantity - currentQuantity
     if (finalDelta === 0) {
       form.setError('counted_quantity', { message: 'La cantidad contada es igual al stock actual — no hay nada para ajustar' })
@@ -107,7 +115,7 @@ export default function AdjustmentPage() {
     await adjust.mutateAsync({
       productId: data.product_id,
       warehouseId: data.warehouse_id,
-      lotId: data.lot_id === NO_LOT ? null : data.lot_id,
+      lotId: data.lot_id === NO_LOT || data.lot_id === '' ? null : data.lot_id,
       delta: finalDelta,
       reasonCategory: data.reason_category,
       notes: data.reason_detail,
@@ -117,10 +125,7 @@ export default function AdjustmentPage() {
     router.push('/movements')
   }
 
-  if (user && user.role === 'engineer') {
-    router.replace('/stock')
-    return null
-  }
+  if (!user || user.role === 'engineer') return null
 
   return (
     <div className="max-w-xl">
@@ -141,7 +146,7 @@ export default function AdjustmentPage() {
                 onValueChange={(v) => {
                   form.setValue('product_id', v ?? '')
                   form.setValue('warehouse_id', '')
-                  form.setValue('lot_id', NO_LOT)
+                  form.setValue('lot_id', '')
                   setSelectedProduct(v ?? null)
                   setSelectedWarehouse(null)
                 }}
@@ -170,7 +175,7 @@ export default function AdjustmentPage() {
                 value={form.watch('warehouse_id')}
                 onValueChange={(v) => {
                   form.setValue('warehouse_id', v ?? '')
-                  form.setValue('lot_id', NO_LOT)
+                  form.setValue('lot_id', '')
                   setSelectedWarehouse(v ?? null)
                 }}
                 items={Object.fromEntries(warehouses.map(w => [w.id, w.name]))}
@@ -190,23 +195,23 @@ export default function AdjustmentPage() {
               )}
             </div>
 
-            {/* Lote (solo si hay lotes activos) */}
+            {/* Lote (solo si hay lotes activos) — sin default: hay que elegir explícitamente */}
             {activeLots.length > 0 && (
               <div className="space-y-1.5">
-                <Label>Lote</Label>
+                <Label>Lote *</Label>
                 <Select
                   value={selectedLotId}
-                  onValueChange={(v) => form.setValue('lot_id', v ?? NO_LOT)}
+                  onValueChange={(v) => form.setValue('lot_id', v ?? '')}
                   items={{
-                    [NO_LOT]: 'Sin lote específico — ajuste general',
+                    [NO_LOT]: 'Sin lote específico — ajuste general (no descuenta de un lote en particular)',
                     ...Object.fromEntries(activeLots.map(l => [l.lot_id, `${l.lote} (${l.quantity} ${selectedUnit})`])),
                   }}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Sin lote específico..." />
+                    <SelectValue placeholder="Seleccioná un lote o 'Sin lote específico'..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value={NO_LOT}>Sin lote específico — ajuste general</SelectItem>
+                    <SelectItem value={NO_LOT}>Sin lote específico — ajuste general (no descuenta de un lote en particular)</SelectItem>
                     {activeLots.map(l => (
                       <SelectItem key={l.lot_id} value={l.lot_id}>
                         {l.lote}
@@ -217,6 +222,9 @@ export default function AdjustmentPage() {
                     ))}
                   </SelectContent>
                 </Select>
+                {form.formState.errors.lot_id && (
+                  <p className="text-xs text-red-500">{form.formState.errors.lot_id.message}</p>
+                )}
               </div>
             )}
 
