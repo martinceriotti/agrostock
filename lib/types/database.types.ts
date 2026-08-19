@@ -416,6 +416,7 @@ export type Database = {
           organization_id: string | null
           created_at: string
           lot_id: string | null
+          adjustment_reason: 'recount' | 'breakage' | 'theft_loss' | 'expiry' | 'data_correction' | 'other' | null
         }
         Insert: {
           id?: string
@@ -431,6 +432,7 @@ export type Database = {
           organization_id?: string | null
           created_at?: string
           lot_id?: string | null
+          adjustment_reason?: 'recount' | 'breakage' | 'theft_loss' | 'expiry' | 'data_correction' | 'other' | null
         }
         Update: {
           id?: string
@@ -446,6 +448,7 @@ export type Database = {
           organization_id?: string | null
           created_at?: string
           lot_id?: string | null
+          adjustment_reason?: 'recount' | 'breakage' | 'theft_loss' | 'expiry' | 'data_correction' | 'other' | null
         }
       }
     }
