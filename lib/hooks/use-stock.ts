@@ -153,3 +153,56 @@ export function useTransferStock() {
     onError: () => toast.error('Error al registrar la transferencia'),
   })
 }
+
+export function useAdjustStock() {
+  const supabase = createClient()
+  const qc = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      productId,
+      warehouseId,
+      lotId,
+      delta,
+      reasonCategory,
+      notes,
+      userId,
+      orgId,
+    }: {
+      productId: string
+      warehouseId: string
+      lotId: string | null
+      delta: number
+      reasonCategory: 'recount' | 'breakage' | 'theft_loss' | 'expiry' | 'data_correction' | 'other'
+      notes: string
+      userId: string
+      orgId: string
+    }) => {
+      const { error } = await supabase.from('stock_movements').insert({
+        movement_type: 'adjustment',
+        product_id: productId,
+        warehouse_id: warehouseId,
+        lot_id: lotId,
+        quantity: delta,
+        adjustment_reason: reasonCategory,
+        notes,
+        created_by: userId,
+        organization_id: orgId,
+      })
+      if (error) throw error
+    },
+    onSuccess: (_, variables) => {
+      qc.invalidateQueries({ queryKey: ['current-stock'] })
+      qc.invalidateQueries({ queryKey: ['stock-movements'] })
+      qc.invalidateQueries({ queryKey: ['lot-stock'] })
+      toast.success('Ajuste registrado. Stock actualizado.')
+      logActivity({
+        action: 'adjust_stock',
+        entityType: 'stock_movement',
+        userId: variables.userId,
+        orgId: variables.orgId,
+      })
+    },
+    onError: () => toast.error('Error al registrar el ajuste'),
+  })
+}
