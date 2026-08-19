@@ -40,12 +40,6 @@ type AdjustmentData = z.infer<typeof adjustmentSchema>
 export default function AdjustmentPage() {
   const router = useRouter()
   const { data: user } = useUser()
-
-  if (user && user.role === 'engineer') {
-    router.replace('/stock')
-    return null
-  }
-
   const { data: stockData = [] } = useCurrentStock()
   const { data: allWarehouses = [] } = useWarehouses()
   const adjust = useAdjustStock()
@@ -121,6 +115,11 @@ export default function AdjustmentPage() {
       orgId: user.organization_id,
     })
     router.push('/movements')
+  }
+
+  if (user && user.role === 'engineer') {
+    router.replace('/stock')
+    return null
   }
 
   return (
